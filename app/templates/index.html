@@ -1,0 +1,27 @@
+{% import 'appbuilder/general/lib.html' as lib %}
+{% extends "appbuilder/base.html" %}
+{% block head_css %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{url_for('static',filename='index.css')}}"></link>
+{% endblock %}
+{% block content %}
+{% for c in categories %}
+<h1 class="category">{{ c.name }}</h1>
+{% if artists[c.id] is iterable %}
+{% for a in artists[c.id] %}
+<h2 class="artist">{{ a }}</h2>
+<table>
+{% for i in items[c.id][a.id] %}
+  <tr>
+    <td>{{ i.master_year }}</td><td>{{ i }}</td>
+  </tr>
+  <tr>
+    <td colspan="2">filed under {{ i.folder }}</td>
+  </tr>
+{% endfor %}
+</table>
+{% endfor %}
+{% endif %}
+<hr />
+{% endfor %}
+{% endblock %}

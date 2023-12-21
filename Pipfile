@@ -1,0 +1,16 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+flask = "*"
+mongoengine = "*"
+flask-restful = "*"
+flask-appbuilder = "*"
+pillow = "*"
+python-dotenv = "*"
+python3-discogs-client = "*"
+flask-mongoengine = {editable = true, ref = "1.0.1", git = "https://github.com/idoshr/flask-mongoengine.git"}
