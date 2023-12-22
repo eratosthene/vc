@@ -6,22 +6,37 @@
 {% endblock %}
 {% block content %}
 {% for c in categories %}
-<h1 class="category">{{ c.name }}</h1>
+<div class="category-block">
+  <div class="category-header">{{ c.name }}</div>
 {% if artists[c.id] is iterable %}
+  <div class="artist-columns">
 {% for a in artists[c.id] %}
-<h2 class="artist">{{ a }}</h2>
-<table>
+    <div class="artist-block">
+      <div class="artist-header">{{ a }}</div>
+      <div class="release-block">
 {% for i in items[c.id][a.id] %}
-  <tr>
-    <td>{{ i.master_year }}</td><td>{{ i }}</td>
-  </tr>
-  <tr>
-    <td colspan="2">filed under {{ i.folder }}</td>
-  </tr>
-{% endfor %}
-</table>
-{% endfor %}
+        <div class="release-info-block">
+          <span class="release-year">{{ i.master_year }}</span><span class="release-title">{{ i }}</span>
+{% if ( c.name == "Christmas" or c.name == "Halloween" or
+        c.name == "Soundtracks" or a.sort_name == "Various Artists" or
+        i.folder.name != "Alphabetical")
+%}
+          <div class="release-filed-block">
+            <span class="release-filed-info">(filed under {{ i.folder }})</span>
+          </div>
 {% endif %}
-<hr />
+{% if ( i.filed_under and i.filed_under != a ) %}
+          <div class="release-filed-block">
+            <span class="release-filed-info">(filed under {{ i.filed_under }})</span>
+          </div>
+{% endif %}
+        </div>
+{% endfor %}
+      </div>
+    </div>
+{% endfor %}
+  </div>
+{% endif %}
+</div>
 {% endfor %}
 {% endblock %}

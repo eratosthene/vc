@@ -1,7 +1,57 @@
-h1.category {
+@media print {
+  @page {
+    size: letter;
+  }
+  div.category-block {
+    break-after: page;
+  }
+  div.artist-block {
+    break-inside: avoid;
+  }
+}
+div.category-block {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 10pt;
+}
+div.category-header {
+  font-weight: bold;
+  font-size: 2em;
+  border-bottom: .1em solid #222222;
+}
+div.artist-columns {
+  column-count: 3;
+  column-width: auto;
+  column-gap: 1.5em;
+  column-rule: thin dotted #666666;
+}
+div.artist-block {
+  padding-bottom: .5em;
+}
+div.artist-header {
+  font-weight: bold;
+  font-size: 1.25em;
+  border-bottom: .05em solid #444444;
+}
+div.release-block {
 
 }
-
-h2.artist {
+div.release-info-block {
+  border-bottom: .05em dashed #666666;  
+}
+div.release-filed-block {
+  margin-left: 3em;
+  color: #666666;
+  font-size: .8em;
+  font-style: italic;
+}
+span.release-year {
+  font-size: .8em;
+  padding-right: .5em;
+  border-right: .05em dotted #666666;
+}
+span.release-title {
+  padding-left: .5em;
+}
+span.release-filed-info {
   
 }
