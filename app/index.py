@@ -1,3 +1,4 @@
+import logging
 from flask_appbuilder import IndexView
 from flask_appbuilder.views import expose
 from flask_appbuilder.models.mongoengine.interface import MongoEngineInterface
@@ -7,7 +8,13 @@ def sortFunc(e):
     return str(e)
     
 def yearSortFunc(e):
-    return e.master_year
+    return e['year']
+    
+def yearRSortFunc(e):
+    if e.released:
+        return str(e.released)
+    else:
+        return str(e.year)
     
 class MyIndexView(IndexView):
     index_template = "index.html"
@@ -28,11 +35,29 @@ class MyIndexView(IndexView):
             artists[c.id] = list(set(artists[c.id]))
             artists[c.id].sort(key=sortFunc)
             for a in artists[c.id]:
+                # logging.debug(a)
                 items[c.id][a.id] = []
+                releases = {}
+                masters = []
                 for i in CollectionItem.objects(categories=c.id,artists=a.id):
-                    items[c.id][a.id].append(i)
-                items[c.id][a.id].sort(key=yearSortFunc)
-            # artists[c.id] = [dict(d) for d in set([frozenset(i.items()) for i in artists[c.id]])]
+                    if i.master_id in releases:
+                        releases[i.master_id].append(i) # todo: no master fix
+                    else:
+                        releases[i.master_id] = [i]
+                    masters.append({'master_id':i.master_id,'year':i.master_year})
+                masters = [dict(t) for t in {tuple(d.items()) for d in masters}]
+                masters.sort(key=yearSortFunc)
+                # logging.debug(masters)
+                for master_id in releases:
+                    releases[master_id].sort(key=yearRSortFunc)
+                # logging.debug(releases)
+                for m in masters:
+                    master_id=m['master_id']
+                    for i in releases[master_id]:
+                        items[c.id][a.id].append(i)
+                # for i in CollectionItem.objects(categories=c.id,artists=a.id):
+                #     items[c.id][a.id].append(i)
+                # items[c.id][a.id].sort(key=yearRSortFunc)
         return self.render_template(self.index_template, 
                 appbuilder=self.appbuilder, 
                 categories=categories,

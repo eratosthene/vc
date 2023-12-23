@@ -1,5 +1,5 @@
 from mongoengine import Document
-from mongoengine import IntField, StringField, ListField, ReferenceField, BooleanField
+from mongoengine import IntField, StringField, ListField, ReferenceField, BooleanField, DictField
 
 class CollectionItem(Document):
     instance_id = IntField(required=True, unique=True)
@@ -14,6 +14,9 @@ class CollectionItem(Document):
     categories  = ListField(ReferenceField('Category'))
     folder      = ReferenceField('Folder')
     filed_under = ReferenceField('Artist')
+    formats     = ListField(DictField())
+    notes       = ListField(DictField())
+    released    = StringField()
     
     def __unicode__(self):
         return self.title
