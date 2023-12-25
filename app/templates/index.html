@@ -6,51 +6,114 @@
 {% endblock %}
 {% block content %}
 {% for c in categories %}
-{% if artists[c.id] is iterable and artists[c.id]|length > 0 %}
-<div class="category-block">
-  <div id="{{ c.id }}" class="category-header">{{ c.name }}</div>
-  <div class="artist-columns">
-{% for a in artists[c.id] %}
-    <div class="artist-block">
-      <div class="artist-header">{{ a.name }}</div>
-      <div class="release-block">
-{% for i in items[c.id][a.id] %}
-        <div class="release-info-block">
-          <span class="release-year">{{ i.master_year }}</span>
-          <span class="release-title">{{ i }}</span>
-{% for f in i.formats %}
-{% if f.name == 'Box Set' %}
-          <span class="formats">({{ f.name }})</span>
-{% endif %}            
-{% for d in f.descriptions %}
-{% if d == 'Mono' or d == 'Picture Disc' %}
-          <span class="formats">({{ d }})</span>
-{% endif %}
-{% endfor %}
-{% endfor %}
-{% if i.master_year != i.year %}
-          <span class="formats">[{{ i.year|string+' pressing' if i.year else 'no press date' }}]</span>
-{% endif %}
-{% if ( c.name == "Christmas" or c.name == "Halloween" or
-        c.name == "Soundtracks" or a.sort_name == "Various Artists" or
-        i.folder.name != "Alphabetical")
-%}
-          <div class="release-filed-block">
-            <span class="release-filed-info">(filed under {{ i.folder }})</span>
+  {% if c.name == 'Soundtracks' %}
+      <div class="category-block">
+        <div id="{{ c.id }}" class="category-header">{{ c.name }}</div>
+        <div class="artist-columns">
+    {% for i in soundtrack_items %}
+          <div class="soundtrack-release-info-block">
+            <span class="release-year">{{ i.master_year if i.master_year > 0 else i.year }}</span>
+            <span class="soundtrack-release-title">{{ i }}</span>
+      {% for f in i.formats %}
+        {% if f.name == 'Box Set' %}
+            <span class="formats">({{ f.name }})</span>
+        {% endif %}            
+        {% for d in f.descriptions %}
+          {% if d == 'Mono' or d == 'Picture Disc' %}
+            <span class="formats">({{ d }})</span>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+      {% if i.master_year != i.year %}
+            <span class="formats">[{{ i.year|string+' pressing' if i.year else 'no press date' }}]</span>
+      {% endif %}
+            <div class="soundtrack-artist-block">
+              {{ i.artists|join(', ',attribute='name') }}
+            </div>
+      {% if i.folder.name != 'Soundtracks' %}
+            <div class="release-filed-block">
+              <span class="release-filed-info">(filed under {{ i.folder }})</span>
+            </div>
+      {% endif %}
+      {% if ( i.filed_under ) %}
+            <div class="release-filed-block">
+              <span class="release-filed-info">(filed under {{ i.filed_under }})</span>
+            </div>
+      {% endif %}
           </div>
-{% endif %}
-{% if ( i.filed_under and i.filed_under != a ) %}
-          <div class="release-filed-block">
-            <span class="release-filed-info">(filed under {{ i.filed_under }})</span>
-          </div>
-{% endif %}
+    {% endfor %}
         </div>
-{% endfor %}
       </div>
-    </div>
-{% endfor %}
-  </div>
-</div>
-{% endif %}
+  {% elif c.name == 'Edison Diamond Disc' %}
+      <div class="category-block">
+        <div id="{{ c.id }}" class="category-header">{{ c.name }}</div>
+        <div class="artist-columns">
+    {% for i in edison_items %}
+          <div class="soundtrack-release-info-block">
+            <span class="release-year">{{ i.master_year if i.master_year > 0 else i.year }}</span>
+            <span class="soundtrack-release-title">{{ i }}</span>
+      {% if i.master_year != i.year %}
+            <span class="formats">[{{ i.year|string+' pressing' if i.year else 'no press date' }}]</span>
+      {% endif %}
+            <div class="soundtrack-artist-block">
+              {{ i.artists|join(', ',attribute='name') }}
+            </div>
+            <div class="release-filed-block">
+              <span class="release-filed-info">(filed in {{ i.notes[0]['value'] }})</span>
+            </div>
+          </div>
+    {% endfor %}
+        </div>
+      </div>
+  {% else %}
+    {% if artists[c.id] is iterable and artists[c.id]|length > 0 %}
+      <div class="category-block">
+        <div id="{{ c.id }}" class="category-header">{{ c.name }}</div>
+        <div class="artist-columns">
+      {% for a in artists[c.id] %}
+        {% if not a.ignore %}
+            <div class="artist-block">
+              <div class="artist-header">{{ a.name }}</div>
+              <div class="release-block">
+          {% for i in items[c.id][a.id] %}
+                <div class="release-info-block">
+                  <span class="release-year">{{ i.master_year if i.master_year > 0 else i.year }}</span>
+                  <span class="release-title">{{ i }}</span>
+            {% for f in i.formats %}
+              {% if f.name == 'Box Set' %}
+                  <span class="formats">({{ f.name }})</span>
+              {% endif %}            
+              {% for d in f.descriptions %}
+                {% if d == 'Mono' or d == 'Picture Disc' %}
+                  <span class="formats">({{ d }})</span>
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+            {% if i.master_year != i.year %}
+                  <span class="formats">[{{ i.year|string+' pressing' if i.year else 'no press date' }}]</span>
+            {% endif %}
+            {% if ( c.name == "Christmas" or c.name == "Halloween" or
+                    c.name == "Soundtracks" or a.sort_name == "Various Artists" or
+                    i.folder.name != "Alphabetical")
+            %}
+                  <div class="release-filed-block">
+                    <span class="release-filed-info">(filed under {{ i.folder }})</span>
+                  </div>
+            {% endif %}
+            {% if ( i.filed_under and i.filed_under != a ) %}
+                  <div class="release-filed-block">
+                    <span class="release-filed-info">(filed under {{ i.filed_under }})</span>
+                  </div>
+            {% endif %}
+                </div>
+          {% endfor %}
+              </div>
+            </div>
+        {% endif %}
+      {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
 {% endfor %}
 {% endblock %}

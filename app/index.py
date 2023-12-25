@@ -3,6 +3,7 @@ from flask_appbuilder import IndexView
 from flask_appbuilder.views import expose
 from flask_appbuilder.models.mongoengine.interface import MongoEngineInterface
 from app.models import CollectionItem, Category
+import re
 
 def sortFunc(e):
     return str(e)
@@ -15,7 +16,29 @@ def yearRSortFunc(e):
         return str(e.released)
     else:
         return str(e.year)
-    
+
+def releaseSortFunc(e):
+    if e.title.startswith("The "):
+        return e.title.removeprefix("The ") + ", The"
+    else:
+        return e.title
+
+def slotSortFunc(e):
+    n = e.notes[0]['value']
+    print('['+n+']')
+    p = re.compile('slot\s+([0-9]+)')
+    print(p)
+    s = p.search(n)
+    print(s)
+    p = re.compile('(Top|Bottom) drawer')
+    print(p)
+    d = p.search(n)
+    print(d)
+    if d.group(1) == 'Top':
+        return 100 + int(s.group(1))
+    else:
+        return 200 + int(s.group(1))
+            
 class MyIndexView(IndexView):
     index_template = "index.html"
 
@@ -25,6 +48,8 @@ class MyIndexView(IndexView):
         categories = []
         artists = {}
         items = {}
+        soundtrack_items = []
+        edison_items = []
         for c in Category.objects().order_by('name'):
             categories.append(c)
             artists[c.id] = []
@@ -55,12 +80,19 @@ class MyIndexView(IndexView):
                     master_id=m['master_id']
                     for i in releases[master_id]:
                         items[c.id][a.id].append(i)
-                # for i in CollectionItem.objects(categories=c.id,artists=a.id):
-                #     items[c.id][a.id].append(i)
-                # items[c.id][a.id].sort(key=yearRSortFunc)
+            if c.name == 'Soundtracks':
+                for i in CollectionItem.objects(categories=c.id):
+                    soundtrack_items.append(i)
+                soundtrack_items.sort(key=releaseSortFunc)
+            if c.name == 'Edison Diamond Disc':
+                for i in CollectionItem.objects(categories=c.id):
+                    edison_items.append(i)
+                edison_items.sort(key=slotSortFunc)
         return self.render_template(self.index_template, 
                 appbuilder=self.appbuilder, 
                 categories=categories,
                 artists=artists,
-                items=items)
+                items=items,
+                soundtrack_items=soundtrack_items,
+                edison_items=edison_items)
 
