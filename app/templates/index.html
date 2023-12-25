@@ -5,6 +5,14 @@
     <link rel="stylesheet" href="{{url_for('static',filename='index.css')}}"></link>
 {% endblock %}
 {% block content %}
+      <div class="contents">
+      <h1>Our Vinyl Collection</h1>
+      <ul class="toc">
+{% for c in categories %}
+        <li><a href="#{{ c.id }}">{{ c.name }}</a></li>
+{% endfor %}
+      </ul>
+      </div>
 {% for c in categories %}
   {% if c.name == 'Soundtracks' %}
       <div class="category-block">

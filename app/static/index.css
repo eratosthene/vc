@@ -6,12 +6,58 @@
   div.category-block {
     break-after: page;
   }
+  div.contents {
+    break-after: page;
+  }
   div.artist-block {
     break-inside: avoid;
   }
   div.soundtrack-release-info-block {
     break-inside: avoid;
   }
+  @page:right{ 
+    @bottom-left {
+      content:  string(doctitle);
+      font-size: 9pt;
+      font-family: "Times New Roman", Times, serif;
+      color: #333;
+    }
+
+    @bottom-right { 
+      content: counter(page);
+      font-size: 9pt;
+      font-family: "Times New Roman", Times, serif;
+    }
+  }
+  @page:left {
+    @bottom-right {
+      content:  string(doctitle);
+      font-size: 9pt;
+      font-family: "Times New Roman", Times, serif;
+      color: #333;
+    }
+
+    @bottom-left { 
+      content: counter(page);
+      font-size: 9pt;
+      font-family: "Times New Roman", Times, serif;
+    }
+  }
+  ul.toc a::after {
+    content: leader('.') target-counter(attr(href), page);
+  }
+}
+div.contents {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 12pt;
+}
+ul.toc li {
+  list-style-type: none;
+  padding-left: none;
+}
+ul.toc a {
+  text-decoration: none;
+  font-weight: bold;
 }
 div.category-block {
   font-family: "Times New Roman", Times, serif;
@@ -21,6 +67,7 @@ div.category-header {
   font-weight: bold;
   font-size: 2em;
   border-bottom: .1em solid #222222;
+  string-set: doctitle content();
 }
 div.artist-columns {
   column-count: 3;
