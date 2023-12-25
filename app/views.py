@@ -45,6 +45,16 @@ class CollectionModelView(ModelView):
         'folder',
         'filed_under'
     ]
+    add_columns = [
+        'artists',
+        'title',
+        'master_year',
+        'categories',
+        'genres',
+        'styles',
+        'folder',
+        'filed_under'
+    ]
     base_order = ('artists','asc')
 
 class CategoryModelView(ModelView):
