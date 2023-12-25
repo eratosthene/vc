@@ -25,15 +25,10 @@ def releaseSortFunc(e):
 
 def slotSortFunc(e):
     n = e.notes[0]['value']
-    print('['+n+']')
     p = re.compile('slot\s+([0-9]+)')
-    print(p)
     s = p.search(n)
-    print(s)
     p = re.compile('(Top|Bottom) drawer')
-    print(p)
     d = p.search(n)
-    print(d)
     if d.group(1) == 'Top':
         return 100 + int(s.group(1))
     else:
