@@ -1,7 +1,7 @@
 @media print {
   @page {
     size: letter;
-    margin: .25in;
+    margin: 35pt 18pt 35pt;
   }
   div.category-block {
     break-after: page;
@@ -17,6 +17,7 @@
   }
   @page:right{ 
     @bottom-left {
+      margin: 5pt 0 15pt 0;
       content:  string(doctitle);
       font-size: 9pt;
       font-family: "Times New Roman", Times, serif;
@@ -24,6 +25,7 @@
     }
 
     @bottom-right { 
+      margin: 5pt 0 15pt 0;
       content: counter(page);
       font-size: 9pt;
       font-family: "Times New Roman", Times, serif;
@@ -31,6 +33,7 @@
   }
   @page:left {
     @bottom-right {
+      margin: 5pt 0 15pt 0;
       content:  string(doctitle);
       font-size: 9pt;
       font-family: "Times New Roman", Times, serif;
@@ -38,6 +41,7 @@
     }
 
     @bottom-left { 
+      margin: 5pt 0 15pt 0;
       content: counter(page);
       font-size: 9pt;
       font-family: "Times New Roman", Times, serif;
@@ -54,6 +58,7 @@ div.contents {
 ul.toc li {
   list-style-type: none;
   padding-left: none;
+  margin-left: none;
 }
 ul.toc a {
   text-decoration: none;
