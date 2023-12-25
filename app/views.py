@@ -38,6 +38,8 @@ class CollectionModelView(ModelView):
     edit_columns = [
         'artists',
         'title',
+        'year',
+        'master_id',
         'master_year',
         'categories',
         'genres',
@@ -48,6 +50,8 @@ class CollectionModelView(ModelView):
     add_columns = [
         'artists',
         'title',
+        'year',
+        'master_id',
         'master_year',
         'categories',
         'genres',
