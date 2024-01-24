@@ -54,6 +54,42 @@
     {% endfor %}
         </div>
       </div>
+  {% elif c.name == 'Showtunes' %}
+      <div class="category-block">
+        <div id="{{ c.id }}" class="category-header">{{ c.name }}</div>
+        <div class="artist-columns">
+    {% for i in showtunes_items %}
+          <div class="soundtrack-release-info-block">
+            <span class="release-year">{{ i.master_year if i.master_year > 0 else i.year }}</span>
+            <span class="soundtrack-release-title">{{ i }}</span>
+      {% for f in i.formats %}
+        {% if f.name == 'Box Set' %}
+            <span class="formats">({{ f.name }})</span>
+        {% endif %}            
+        {% for d in f.descriptions %}
+          {% if d == 'Mono' or d == 'Picture Disc' %}
+            <span class="formats">({{ d }})</span>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+      {% if i.master_year != i.year %}
+            <span class="formats">[{{ i.year|string+' pressing' if i.year else 'no press date' }}]</span>
+      {% endif %}
+            <div class="soundtrack-artist-block">
+              {{ i.artists|join(', ',attribute='name') }}
+            </div>
+            <div class="release-filed-block">
+              <span class="release-filed-info">(filed under {{ i.folder }})</span>
+            </div>
+      {% if ( i.filed_under ) %}
+            <div class="release-filed-block">
+              <span class="release-filed-info">(filed under {{ i.filed_under }})</span>
+            </div>
+      {% endif %}
+          </div>
+    {% endfor %}
+        </div>
+      </div>
   {% elif c.name == 'Edison Diamond Disc' %}
       <div class="category-block">
         <div id="{{ c.id }}" class="category-header">{{ c.name }}</div>

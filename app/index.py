@@ -18,10 +18,11 @@ def yearRSortFunc(e):
         return str(e.year)
 
 def releaseSortFunc(e):
-    if e.title.startswith("The "):
-        return e.title.removeprefix("The ") + ", The"
+    t = e.title.lower()
+    if t.startswith("the "):
+        return t.removeprefix("the ") + ", the"
     else:
-        return e.title
+        return t
 
 def slotSortFunc(e):
     n = e.notes[0]['value']
@@ -44,6 +45,7 @@ class MyIndexView(IndexView):
         artists = {}
         items = {}
         soundtrack_items = []
+        showtunes_items = []
         edison_items = []
         for c in Category.objects().order_by('name'):
             categories.append(c)
@@ -79,6 +81,10 @@ class MyIndexView(IndexView):
                 for i in CollectionItem.objects(categories=c.id):
                     soundtrack_items.append(i)
                 soundtrack_items.sort(key=releaseSortFunc)
+            if c.name == 'Showtunes':
+                for i in CollectionItem.objects(categories=c.id):
+                    showtunes_items.append(i)
+                soundtrack_items.sort(key=releaseSortFunc)
             if c.name == 'Edison Diamond Disc':
                 for i in CollectionItem.objects(categories=c.id):
                     edison_items.append(i)
@@ -89,5 +95,6 @@ class MyIndexView(IndexView):
                 artists=artists,
                 items=items,
                 soundtrack_items=soundtrack_items,
+                showtunes_items=showtunes_items,
                 edison_items=edison_items)
 
