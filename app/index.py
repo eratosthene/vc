@@ -84,7 +84,7 @@ class MyIndexView(IndexView):
             if c.name == 'Showtunes':
                 for i in CollectionItem.objects(categories=c.id):
                     showtunes_items.append(i)
-                soundtrack_items.sort(key=releaseSortFunc)
+                showtunes_items.sort(key=releaseSortFunc)
             if c.name == 'Edison Diamond Disc':
                 for i in CollectionItem.objects(categories=c.id):
                     edison_items.append(i)
