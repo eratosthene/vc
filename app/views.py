@@ -5,6 +5,7 @@ from flask_appbuilder.actions import action
 from app import appbuilder
 from app.models import CollectionItem, Artist, Genre, Style, Category, Folder
 from app.widgets import CollectionListWidget
+from app.rand import RandomItemView
 
 class CollectionItemModelView(CompactCRUDMixin,ModelView):
     datamodel = MongoEngineInterface(CollectionItem)
@@ -59,6 +60,27 @@ class CollectionModelView(ModelView):
         'folder',
         'filed_under'
     ]
+    show_columns = [
+        'instance_id',
+        'release_show',
+        'title',
+        'year',
+        'artists',
+        'genres',
+        'styles',
+        'master_show',
+        'master_year',
+        'categories',
+        'folder',
+        'filed_under',
+        'formats',
+        'notes',
+        'released'
+    ]
+    label_columns = {
+        'release_show': 'Release Id',
+        'master_show': 'Master Id'
+    }
     base_order = ('artists','asc')
 
 class CategoryModelView(ModelView):
@@ -103,6 +125,8 @@ appbuilder.add_view(GenreModelView, "Genres")
 appbuilder.add_view(StyleModelView, "Styles")
 appbuilder.add_view(FolderModelView, "Folders")
 appbuilder.add_view(CategoryModelView, "Categories")
+
+appbuilder.add_view(RandomItemView, 'Unlistened', category="Random Item")
 
 
 """

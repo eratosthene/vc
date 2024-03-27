@@ -1,5 +1,6 @@
 from mongoengine import Document
 from mongoengine import IntField, StringField, ListField, ReferenceField, BooleanField, DictField
+from flask import Markup
 
 class CollectionItem(Document):
     instance_id = IntField(required=True, unique=True)
@@ -23,6 +24,16 @@ class CollectionItem(Document):
 
     def __repr__(self):
         return self.title
+
+    def release_show(self):
+        return Markup(
+            '<a href="https://www.discogs.com/release/' + str(self.release_id) + '">' + str(self.release_id) + '</a>'
+        )
+    
+    def master_show(self):
+        return Markup(
+            '<a href="https://www.discogs.com/master/' + str(self.master_id) + '">' + str(self.master_id) + '</a>'
+        )
         
 class Artist(Document):
     artist_id   = IntField(required=True, unique=True)

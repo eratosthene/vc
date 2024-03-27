@@ -14,3 +14,4 @@ pillow = "*"
 python-dotenv = "*"
 python3-discogs-client = "*"
 flask-mongoengine = {editable = true, ref = "1.0.1", git = "https://github.com/idoshr/flask-mongoengine.git"}
+certifi = "*"
