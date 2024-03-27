@@ -6,6 +6,7 @@ from app import appbuilder
 from app.models import CollectionItem, Artist, Genre, Style, Category, Folder
 from app.widgets import CollectionListWidget
 from app.rand import RandomItemView
+from app.printview import PrintView
 
 class CollectionItemModelView(CompactCRUDMixin,ModelView):
     datamodel = MongoEngineInterface(CollectionItem)
@@ -126,6 +127,7 @@ appbuilder.add_view(StyleModelView, "Styles")
 appbuilder.add_view(FolderModelView, "Folders")
 appbuilder.add_view(CategoryModelView, "Categories")
 
+appbuilder.add_view(PrintView, 'Print View')
 appbuilder.add_view(RandomItemView, 'Unlistened', category="Random Item")
 
 
