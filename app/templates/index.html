@@ -3,11 +3,27 @@
 <div class="container">
   <h1>Our Vinyl Collection</h1>
   <h2>Total LPs: {{ lp_total }}</h2>
+  <a href="{{ url_for('MyIndexView.unlistened_lp') }}">Get random unlistened</a>
   <h2>Total releases: {{ full_total }}</h2>
+  <a href="{{ url_for('MyIndexView.unlistened_release') }}">Get random unlistened</a>
   <h3>Releases per folder:</h3>
   <table class="table table-bordered table-condensed table-hover" style="width: auto">
 {% for f in by_folder %}
-    <tr><td><a href="{{ url_for('CollectionModelView.list',_flt_0_folder=f.folder.id) }}">{{ f.folder.name }}</a></td><td>{{ f.total }}</td></tr>
+    <tr>
+      <td><a href="{{ url_for('CollectionModelView.list',_flt_0_folder=f.folder.id) }}">{{ f.folder.name }}</a></td>
+      <td>{{ f.total }}</td>
+      <td><a href="{{ url_for('MyIndexView.unlistened_folder',folder=f.folder.id) }}">Get random unlistened</a>
+    </tr>
+{% endfor %}
+  </table>
+  <h3>Releases per category:</h3>
+  <table class="table table-bordered table-condensed table-hover" style="width: auto">
+{% for f in by_category %}
+    <tr>
+      <td><a href="{{ url_for('CollectionModelView.list',_flt_0_categories=f.category.id) }}">{{ f.category.name }}</a></td>
+      <td>{{ f.total }}</td>
+      <td><a href="{{ url_for('MyIndexView.unlistened_category',category=f.category.id) }}">Get random unlistened</a>
+    </tr>
 {% endfor %}
   </table>
 </div>

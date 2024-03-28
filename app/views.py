@@ -5,7 +5,7 @@ from flask_appbuilder.actions import action
 from app import appbuilder
 from app.models import CollectionItem, Artist, Genre, Style, Category, Folder
 from app.widgets import CollectionListWidget
-from app.rand import RandomItemView
+#from app.rand import RandomItemView
 from app.printview import PrintView
 
 class CollectionItemModelView(CompactCRUDMixin,ModelView):
@@ -120,15 +120,14 @@ class FolderModelView(ModelView):
     related_views = [ CollectionModelView ]
 
 appbuilder.add_view(CollectionItemModelView, "Categorize")
-appbuilder.add_view(CollectionModelView, "Collection")
-appbuilder.add_view(ArtistModelView, "Artists")
-appbuilder.add_view(GenreModelView, "Genres")
-appbuilder.add_view(StyleModelView, "Styles")
-appbuilder.add_view(FolderModelView, "Folders")
-appbuilder.add_view(CategoryModelView, "Categories")
+appbuilder.add_view(CollectionModelView, "Collection", category="Manage")
+appbuilder.add_view(ArtistModelView, "Artists", category="Manage")
+appbuilder.add_view(GenreModelView, "Genres", category="Manage")
+appbuilder.add_view(StyleModelView, "Styles", category="Manage")
+appbuilder.add_view(FolderModelView, "Folders", category="Manage")
+appbuilder.add_view(CategoryModelView, "Categories", category="Manage")
 
 appbuilder.add_view(PrintView, 'Print View')
-appbuilder.add_view(RandomItemView, 'Unlistened', category="Random Item")
 
 
 """
