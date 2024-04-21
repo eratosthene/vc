@@ -23,7 +23,6 @@ class CollectionItemModelView(CompactCRUDMixin,ModelView):
     edit_columns = [
         'categories'
     ]
-    base_order = ('artists','desc')
 
 class CollectionModelView(ModelView):
     datamodel = MongoEngineInterface(CollectionItem)
@@ -82,7 +81,6 @@ class CollectionModelView(ModelView):
         'release_show': 'Release Id',
         'master_show': 'Master Id'
     }
-    base_order = ('artists','asc')
 
 class CategoryModelView(ModelView):
     datamodel = MongoEngineInterface(Category)
@@ -97,7 +95,6 @@ class ArtistModelView(ModelView):
         'artist_id',
         'ignore'
     ]
-    base_order = ('name', 'desc')
     related_views = [ CollectionModelView ]
 
 class GenreModelView(ModelView):
