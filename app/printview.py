@@ -2,7 +2,7 @@ import logging
 from flask_appbuilder import BaseView
 from flask_appbuilder.views import expose
 from flask_appbuilder.models.mongoengine.interface import MongoEngineInterface
-from app.models import CollectionItem, Category
+from app.models import CollectionItem, Category, Folder
 import re
 
 def sortFunc(e):
@@ -40,20 +40,28 @@ class PrintView(BaseView):
     default_view = 'printview'
     printview_template = "printview.html"
 
-    @expose('/')
-    def printview(self):
-        self.update_redirect()
+    def crunch(self, folder=None, category=None):
         categories = []
         artists = {}
         items = {}
         soundtrack_items = []
         showtunes_items = []
         edison_items = []
-        for c in Category.objects().order_by('name'):
+        if category:
+            c_query = Category.objects(id=category).order_by('name')
+        else:
+            c_query = Category.objects().order_by('name')
+        for c in c_query:
             categories.append(c)
             artists[c.id] = []
             items[c.id] = {}
-            for i in CollectionItem.objects(categories=c.id):
+            if folder:
+                ci_query = CollectionItem.objects(categories=c.id, folder=folder)
+            # elif category:
+            #     ci_query = CollectionItem.objects(categories=category)
+            else:
+                ci_query = CollectionItem.objects(categories=c.id)
+            for i in ci_query:
                 for a in i.artists:
                     artists[c.id].append(a)
             artists[c.id] = list(set(artists[c.id]))
@@ -63,7 +71,13 @@ class PrintView(BaseView):
                 items[c.id][a.id] = []
                 releases = {}
                 masters = []
-                for i in CollectionItem.objects(categories=c.id,artists=a.id):
+                if folder:
+                    cic_query = CollectionItem.objects(categories=c.id, artists=a.id, folder=folder)
+                # elif category:
+                #     cic_query = CollectionItem.objects(categories=category, artists=a.id)
+                else:
+                    cic_query = CollectionItem.objects(categories=c.id, artists=a.id)
+                for i in cic_query:
                     if i.master_id in releases:
                         releases[i.master_id].append(i) # todo: no master fix
                     else:
@@ -80,19 +94,45 @@ class PrintView(BaseView):
                     for i in releases[master_id]:
                         items[c.id][a.id].append(i)
             if c.name == 'Soundtracks':
-                for i in CollectionItem.objects(categories=c.id):
+                for i in ci_query:
                     soundtrack_items.append(i)
                 soundtrack_items.sort(key=releaseSortFunc)
             if c.name == 'Showtunes':
-                for i in CollectionItem.objects(categories=c.id):
+                for i in ci_query:
                     showtunes_items.append(i)
                 showtunes_items.sort(key=releaseSortFunc)
             if c.name == 'Edison Diamond Disc':
-                for i in CollectionItem.objects(categories=c.id):
+                for i in ci_query:
                     edison_items.append(i)
                 edison_items.sort(key=slotSortFunc)
+                
+        return categories, artists, items, soundtrack_items, showtunes_items, edison_items
+        
+    @expose('/')
+    def printview(self):
+        self.update_redirect()
+        categories, artists, items, soundtrack_items, showtunes_items, edison_items = self.crunch()
+        pagetitle = 'Our Vinyl Collection'
+        
+        return self.render_template(self.printview_template, 
+                appbuilder=self.appbuilder,
+                pagetitle=pagetitle,
+                categories=categories,
+                artists=artists,
+                items=items,
+                soundtrack_items=soundtrack_items,
+                showtunes_items=showtunes_items,
+                edison_items=edison_items)
+    
+    @expose('/folder/<string:folder>')
+    def folder(self, folder):
+        self.update_redirect()
+        categories, artists, items, soundtrack_items, showtunes_items, edison_items = self.crunch(folder=folder)
+        pagetitle = 'Folder: '+str(Folder.objects.get(id=folder).name)
+        
         return self.render_template(self.printview_template, 
                 appbuilder=self.appbuilder, 
+                pagetitle=pagetitle,
                 categories=categories,
                 artists=artists,
                 items=items,
@@ -100,3 +140,18 @@ class PrintView(BaseView):
                 showtunes_items=showtunes_items,
                 edison_items=edison_items)
 
+    @expose('/category/<string:category>')
+    def category(self, category):
+        self.update_redirect()
+        categories, artists, items, soundtrack_items, showtunes_items, edison_items = self.crunch(category=category)
+        pagetitle = 'Category: '+str(Category.objects.get(id=category).name)
+        
+        return self.render_template(self.printview_template, 
+                appbuilder=self.appbuilder, 
+                pagetitle=pagetitle,
+                categories=categories,
+                artists=artists,
+                items=items,
+                soundtrack_items=soundtrack_items,
+                showtunes_items=showtunes_items,
+                edison_items=edison_items)
