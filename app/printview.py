@@ -39,6 +39,7 @@ def slotSortFunc(e):
 class PrintView(BaseView):
     default_view = 'printview'
     printview_template = "printview.html"
+    printview_index_template = "printviewindex.html"
 
     def crunch(self, folder=None, category=None):
         categories = []
@@ -110,6 +111,28 @@ class PrintView(BaseView):
         
     @expose('/')
     def printview(self):
+        self.update_redirect()
+        lp_total = 0
+        full_total = CollectionItem.objects().count()
+        by_folder = []
+        by_category = []
+        for f in Folder.objects().order_by('name'):
+            c = CollectionItem.objects(folder=f.id).count()
+            by_folder.append({'folder': f, 'total': c})
+            if f.name != 'Edison Diamond Disc':
+                lp_total += c
+        for f in Category.objects().order_by('name'):
+            c = CollectionItem.objects(categories=f.id).count()
+            by_category.append({'category': f, 'total': c})
+        return self.render_template(self.printview_index_template, 
+                appbuilder=self.appbuilder,
+                lp_total=lp_total,
+                full_total=full_total,
+                by_folder=by_folder,
+                by_category=by_category)
+    
+    @expose('/all')
+    def all(self):
         self.update_redirect()
         categories, artists, items, soundtrack_items, showtunes_items, edison_items = self.crunch()
         pagetitle = 'Our Vinyl Collection'
