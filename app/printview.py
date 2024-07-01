@@ -41,7 +41,7 @@ class PrintView(BaseView):
     printview_template = "printview.html"
     printview_index_template = "printviewindex.html"
 
-    def crunch(self, folder=None, category=None):
+    def crunch(self, folder=None, category=None, decade=None):
         categories = []
         artists = {}
         items = {}
@@ -58,8 +58,10 @@ class PrintView(BaseView):
             items[c.id] = {}
             if folder:
                 ci_query = CollectionItem.objects(categories=c.id, folder=folder)
-            # elif category:
-            #     ci_query = CollectionItem.objects(categories=category)
+            elif decade:
+                after = int(decade[:-1])-1
+                before = int(decade[:-1])+10
+                ci_query = CollectionItem.objects(categories=c.id, master_year__gt=after, master_year__lt=before)
             else:
                 ci_query = CollectionItem.objects(categories=c.id)
             for i in ci_query:
@@ -74,8 +76,10 @@ class PrintView(BaseView):
                 masters = []
                 if folder:
                     cic_query = CollectionItem.objects(categories=c.id, artists=a.id, folder=folder)
-                # elif category:
-                #     cic_query = CollectionItem.objects(categories=category, artists=a.id)
+                elif decade:
+                    after = int(decade[:-1])-1
+                    before = int(decade[:-1])+10
+                    cic_query = CollectionItem.objects(categories=c.id, artists=a.id, master_year__gt=after, master_year__lt=before)
                 else:
                     cic_query = CollectionItem.objects(categories=c.id, artists=a.id)
                 for i in cic_query:
@@ -116,6 +120,7 @@ class PrintView(BaseView):
         full_total = CollectionItem.objects().count()
         by_folder = []
         by_category = []
+        by_decade = []
         for f in Folder.objects().order_by('name'):
             c = CollectionItem.objects(folder=f.id).count()
             by_folder.append({'folder': f, 'total': c})
@@ -124,12 +129,32 @@ class PrintView(BaseView):
         for f in Category.objects().order_by('name'):
             c = CollectionItem.objects(categories=f.id).count()
             by_category.append({'category': f, 'total': c})
+        dc = CollectionItem.objects().aggregate([
+            {"$match": {
+                "master_year": {"$gt": 0}
+            }},
+            { "$group": {
+                "_id": {
+                    "decade": { "$concat": [ { "$substr": [ {"$toString": "$master_year"}, 0, 3 ] } , "0s" ] }
+                },
+                "count": { "$sum": {"$toInt": 1} }
+            }},
+            {"$sort": {
+                "_id": 1
+            }}
+        ])
+        for d in dc:
+            decade = d['_id']['decade']
+            after = int(decade[:-1])-1
+            before = int(decade[:-1])+10
+            by_decade.append({'decade': decade, 'count': d['count'], 'before': before, 'after': after})
         return self.render_template(self.printview_index_template, 
                 appbuilder=self.appbuilder,
                 lp_total=lp_total,
                 full_total=full_total,
                 by_folder=by_folder,
-                by_category=by_category)
+                by_category=by_category,
+                by_decade=by_decade)
     
     @expose('/all')
     def all(self):
@@ -168,6 +193,22 @@ class PrintView(BaseView):
         self.update_redirect()
         categories, artists, items, soundtrack_items, showtunes_items, edison_items = self.crunch(category=category)
         pagetitle = 'Category: '+str(Category.objects.get(id=category).name)
+        
+        return self.render_template(self.printview_template, 
+                appbuilder=self.appbuilder, 
+                pagetitle=pagetitle,
+                categories=categories,
+                artists=artists,
+                items=items,
+                soundtrack_items=soundtrack_items,
+                showtunes_items=showtunes_items,
+                edison_items=edison_items)
+
+    @expose('/decade/<string:decade>')
+    def decade(self, decade):
+        self.update_redirect()
+        categories, artists, items, soundtrack_items, showtunes_items, edison_items = self.crunch(decade=decade)
+        pagetitle = 'Decade: '+str(decade)
         
         return self.render_template(self.printview_template, 
                 appbuilder=self.appbuilder, 

@@ -25,5 +25,14 @@
     </tr>
 {% endfor %}
   </table>
+  <h3>Releases per decade:</h3>
+  <table class="table table-bordered table-condensed table-hover" style="width: auto">
+{% for f in by_decade %}
+    <tr>
+      <td><a href="{{ url_for('PrintView.decade',decade=f.decade) }}">{{ f.decade }}</a></td>
+      <td>{{ f.count }}</td>
+    </tr>
+{% endfor %}
+  </table>
 </div>
 {% endblock %}

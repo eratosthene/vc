@@ -3,7 +3,7 @@
 import discogs_client
 from mongoengine import *
 import sys
-sys.path.insert(0, 'app')
+sys.path.insert(0, '../app')
 from models import *
 import argparse
 
