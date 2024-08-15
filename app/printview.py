@@ -7,10 +7,10 @@ import re
 
 def sortFunc(e):
     return str(e)
-    
+
 def yearSortFunc(e):
     return e['year']
-    
+
 def yearRSortFunc(e):
     if e.released:
         return str(e.released)
@@ -35,7 +35,7 @@ def slotSortFunc(e):
         return 100 + int(s.group(1))
     else:
         return 200 + int(s.group(1))
-            
+
 class PrintView(BaseView):
     default_view = 'printview'
     printview_template = "printview.html"
@@ -110,9 +110,9 @@ class PrintView(BaseView):
                 for i in ci_query:
                     edison_items.append(i)
                 edison_items.sort(key=slotSortFunc)
-                
+
         return categories, artists, items, soundtrack_items, showtunes_items, edison_items
-        
+
     @expose('/')
     def printview(self):
         self.update_redirect()
@@ -124,7 +124,7 @@ class PrintView(BaseView):
         for f in Folder.objects().order_by('name'):
             c = CollectionItem.objects(folder=f.id).count()
             by_folder.append({'folder': f, 'total': c})
-            if f.name != 'Edison Diamond Disc':
+            if f.name != 'Edison Diamond Disc' and f.name != '45s':
                 lp_total += c
         for f in Category.objects().order_by('name'):
             c = CollectionItem.objects(categories=f.id).count()
@@ -148,21 +148,21 @@ class PrintView(BaseView):
             after = int(decade[:-1])-1
             before = int(decade[:-1])+10
             by_decade.append({'decade': decade, 'count': d['count'], 'before': before, 'after': after})
-        return self.render_template(self.printview_index_template, 
+        return self.render_template(self.printview_index_template,
                 appbuilder=self.appbuilder,
                 lp_total=lp_total,
                 full_total=full_total,
                 by_folder=by_folder,
                 by_category=by_category,
                 by_decade=by_decade)
-    
+
     @expose('/all')
     def all(self):
         self.update_redirect()
         categories, artists, items, soundtrack_items, showtunes_items, edison_items = self.crunch()
         pagetitle = 'Our Vinyl Collection'
-        
-        return self.render_template(self.printview_template, 
+
+        return self.render_template(self.printview_template,
                 appbuilder=self.appbuilder,
                 pagetitle=pagetitle,
                 categories=categories,
@@ -171,15 +171,15 @@ class PrintView(BaseView):
                 soundtrack_items=soundtrack_items,
                 showtunes_items=showtunes_items,
                 edison_items=edison_items)
-    
+
     @expose('/folder/<string:folder>')
     def folder(self, folder):
         self.update_redirect()
         categories, artists, items, soundtrack_items, showtunes_items, edison_items = self.crunch(folder=folder)
         pagetitle = 'Folder: '+str(Folder.objects.get(id=folder).name)
-        
-        return self.render_template(self.printview_template, 
-                appbuilder=self.appbuilder, 
+
+        return self.render_template(self.printview_template,
+                appbuilder=self.appbuilder,
                 pagetitle=pagetitle,
                 categories=categories,
                 artists=artists,
@@ -193,9 +193,9 @@ class PrintView(BaseView):
         self.update_redirect()
         categories, artists, items, soundtrack_items, showtunes_items, edison_items = self.crunch(category=category)
         pagetitle = 'Category: '+str(Category.objects.get(id=category).name)
-        
-        return self.render_template(self.printview_template, 
-                appbuilder=self.appbuilder, 
+
+        return self.render_template(self.printview_template,
+                appbuilder=self.appbuilder,
                 pagetitle=pagetitle,
                 categories=categories,
                 artists=artists,
@@ -209,9 +209,9 @@ class PrintView(BaseView):
         self.update_redirect()
         categories, artists, items, soundtrack_items, showtunes_items, edison_items = self.crunch(decade=decade)
         pagetitle = 'Decade: '+str(decade)
-        
-        return self.render_template(self.printview_template, 
-                appbuilder=self.appbuilder, 
+
+        return self.render_template(self.printview_template,
+                appbuilder=self.appbuilder,
                 pagetitle=pagetitle,
                 categories=categories,
                 artists=artists,

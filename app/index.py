@@ -162,7 +162,7 @@ class MyIndexView(IndexView):
         for f in Folder.objects().order_by('name'):
             c = CollectionItem.objects(folder=f.id).count()
             by_folder.append({'folder': f, 'total': c})
-            if f.name != 'Edison Diamond Disc':
+            if f.name != 'Edison Diamond Disc' and f.name != '45s':
                 lp_total += c
         for f in Category.objects().order_by('name'):
             c = CollectionItem.objects(categories=f.id).count()
@@ -184,7 +184,7 @@ class MyIndexView(IndexView):
         for d in dc:
             decade = d['_id']['decade']
             by_decade.append({'decade': decade, 'count': d['count']})
-        return self.render_template(self.index_template, 
+        return self.render_template(self.index_template,
                 appbuilder=self.appbuilder,
                 lp_total=lp_total,
                 full_total=full_total,
