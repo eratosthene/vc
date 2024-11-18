@@ -157,6 +157,7 @@ class PrintView(BaseView):
                 by_decade=by_decade)
 
     @expose('/all')
+    @expose('/all/')
     def all(self):
         self.update_redirect()
         categories, artists, items, soundtrack_items, showtunes_items, edison_items = self.crunch()
