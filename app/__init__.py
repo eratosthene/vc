@@ -10,7 +10,7 @@ from app.index import MyIndexView
 """
 
 logging.basicConfig(format='%(asctime)s:%(levelname)s:%(name)s:%(message)s')
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 
 app = Flask(__name__)
 app.config.from_envvar('VC_SETTINGS')

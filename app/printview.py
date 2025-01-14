@@ -25,8 +25,7 @@ def releaseSortFunc(e):
         return t
 
 def slotSortFunc(e):
-    v = [element for element in e.notes if element['field_id'] == 3]
-    n = v[0]['value']
+    n = e.item_notes
     p = re.compile('slot\s+([0-9]+)')
     s = p.search(n)
     p = re.compile('(Top|Bottom) drawer')

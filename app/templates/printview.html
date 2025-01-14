@@ -117,7 +117,7 @@
               {{ i.artists|join(', ',attribute='name') }}
             </div>
             <div class="release-filed-block">
-              <span class="release-filed-info">(filed in {{ i.notes[0]['value'] }})</span>
+              <span class="release-filed-info">(filed in {{ i.item_notes }})</span>
             </div>
           </div>
     {% endfor %}

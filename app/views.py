@@ -4,8 +4,7 @@ from flask_appbuilder.models.mongoengine.interface import MongoEngineInterface
 from flask_appbuilder.actions import action
 from app import appbuilder
 from app.models import CollectionItem, Artist, Genre, Style, Category, Folder
-from app.widgets import CollectionListWidget
-#from app.rand import RandomItemView
+from app.widgets import CollectionModelListWidget
 from app.printview import PrintView
 
 class CollectionItemModelView(CompactCRUDMixin,ModelView):
@@ -26,6 +25,7 @@ class CollectionItemModelView(CompactCRUDMixin,ModelView):
 
 class CollectionModelView(ModelView):
     datamodel = MongoEngineInterface(CollectionItem)
+    list_widget = CollectionModelListWidget
     list_columns = [
         'artists',
         'title',
@@ -45,6 +45,11 @@ class CollectionModelView(ModelView):
         'categories',
         'genres',
         'styles',
+        'media_condition',
+        'sleeve_condition',
+        'item_notes',
+        'listened',
+        'includes',
         'folder',
         'filed_under'
     ]
@@ -57,6 +62,11 @@ class CollectionModelView(ModelView):
         'categories',
         'genres',
         'styles',
+        'media_condition',
+        'sleeve_condition',
+        'item_notes',
+        'listened',
+        'includes',
         'folder',
         'filed_under'
     ]
@@ -74,7 +84,11 @@ class CollectionModelView(ModelView):
         'folder',
         'filed_under',
         'formats',
-        'notes',
+        'media_condition',
+        'sleeve_condition',
+        'item_notes',
+        'listened',
+        'includes',
         'released'
     ]
     label_columns = {

@@ -15,5 +15,6 @@ flask-appbuilder = "*"
 pillow = "*"
 python-dotenv = "*"
 python3-discogs-client = "*"
-flask-mongoengine = {editable = true, ref = "1.0.1", git = "https://github.com/idoshr/flask-mongoengine.git"}
 certifi = "*"
+#flask-mongoengine = {editable = true, ref = "v1.1.0", git = "git+https://github.com/idoshr/flask-mongoengine.git"}
+flask-mongoengine-3 = "*"
