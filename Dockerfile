@@ -7,10 +7,10 @@ RUN apt-get update \
 COPY ./requirements.txt /requirements.txt
 COPY ./vc.cfg /vc.cfg
 COPY ./uwsgi.ini /app/uwsgi.ini
-COPY ./app /app/app
 RUN pip install --upgrade -r /requirements.txt
 RUN sed -i 's/int(pk)/str(pk)/g' /usr/local/lib/python3.10/site-packages/flask_appbuilder/views.py
 RUN sed -i 's/int(pk)/str(pk)/g' /usr/local/lib/python3.10/site-packages/flask_appbuilder/security/manager.py
+COPY ./app /app/app
 
 ENV STATIC_PATH /usr/local/lib/python3.10/site-packages/flask_appbuilder/static
 ENV VC_SETTINGS=/vc.cfg
