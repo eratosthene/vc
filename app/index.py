@@ -119,7 +119,8 @@ class MyIndexView(IndexView):
                 {"$and": [
                     {"listened": False},
                     {"folder": {"$ne": bson.objectid.ObjectId("658240b5fe0b918a7c829f7c")}},
-                    {"folder": {"$ne": bson.objectid.ObjectId("66403dc17ebe177e316c5a00")}}
+                    {"folder": {"$ne": bson.objectid.ObjectId("66403dc17ebe177e316c5a00")}},
+                    {"folder": {"$ne": bson.objectid.ObjectId("66be46fbf1094eb6ef18c2da")}}
                 ]}
             },
             {"$sample":{"size":1}}
@@ -134,7 +135,8 @@ class MyIndexView(IndexView):
             {"$match":
                 {"$and": [
                     {"folder": {"$ne": bson.objectid.ObjectId("658240b5fe0b918a7c829f7c")}},
-                    {"folder": {"$ne": bson.objectid.ObjectId("66403dc17ebe177e316c5a00")}}
+                    {"folder": {"$ne": bson.objectid.ObjectId("66403dc17ebe177e316c5a00")}},
+                    {"folder": {"$ne": bson.objectid.ObjectId("66be46fbf1094eb6ef18c2da")}}
                 ]}
             },
             {"$sample":{"size":1}}
