@@ -1,6 +1,57 @@
-from mongoengine import Document
-from mongoengine import IntField, StringField, ListField, ReferenceField, BooleanField
+from mongoengine import Document, EmbeddedDocument
+from mongoengine import IntField, StringField, ListField, ReferenceField, BooleanField, EmbeddedDocumentListField
+from flask import Markup
 
+class Format(EmbeddedDocument):
+    name         = StringField()
+    qty          = IntField()
+    text         = StringField()
+    descriptions = ListField(StringField())
+
+    def __unicode__(self):
+        ret = ''
+        if self.qty:
+            ret = ret + str(self.qty) + 'x '
+        ret = ret + self.name
+        if len(self.descriptions) > 0:
+            ret = ret + ' {'
+            ret = ret + ' '.join(self.descriptions)
+            ret = ret + '}'
+        if self.text:
+            ret = ret + ' (' + str(self.text) + ')'
+        return ret
+
+    def __repr__(self):
+        ret = ''
+        if self.qty:
+            ret = ret + str(self.qty) + 'x '
+        ret = ret + self.name
+        if len(self.descriptions) > 0:
+            ret = ret + ' {'
+            ret = ret + ' '.join(self.descriptions)
+            ret = ret + '}'
+        if self.text:
+            ret = ret + ' (' + str(self.text) + ')'
+        return ret
+
+class MediaCondition(Document):
+    label = StringField(required=True, unique=True)
+    
+    def __unicode__(self):
+        return self.label
+    
+    def __repr__(self):
+        return self.label
+    
+class SleeveCondition(Document):
+    label = StringField(required=True, unique=True)
+    
+    def __unicode__(self):
+        return self.label
+    
+    def __repr__(self):
+        return self.label
+    
 class CollectionItem(Document):
     instance_id = IntField(required=True, unique=True)
     release_id  = IntField(required=True)
@@ -14,12 +65,29 @@ class CollectionItem(Document):
     categories  = ListField(ReferenceField('Category'))
     folder      = ReferenceField('Folder')
     filed_under = ReferenceField('Artist')
+    formats     = EmbeddedDocumentListField('Format')
+    released    = StringField()
+    media_condition = ReferenceField('MediaCondition')
+    sleeve_condition = ReferenceField('SleeveCondition')
+    item_notes  = StringField()
+    listened = BooleanField()
+    includes = StringField()
     
     def __unicode__(self):
         return self.title
 
     def __repr__(self):
         return self.title
+
+    def release_show(self):
+        return Markup(
+            '<a href="https://www.discogs.com/release/' + str(self.release_id) + '">' + str(self.release_id) + '</a>'
+        )
+    
+    def master_show(self):
+        return Markup(
+            '<a href="https://www.discogs.com/master/' + str(self.master_id) + '">' + str(self.master_id) + '</a>'
+        )
         
 class Artist(Document):
     artist_id   = IntField(required=True, unique=True)
@@ -75,3 +143,4 @@ class Folder(Document):
 
     def __repr__(self):
         return self.name
+

@@ -1,0 +1,127 @@
+@media print {
+  @page {
+    size: letter;
+    margin: 35pt 18pt 35pt;
+  }
+  div.category-block {
+    break-after: page;
+  }
+  div.contents {
+    break-after: page;
+  }
+  div.artist-block {
+    break-inside: avoid;
+  }
+  div.soundtrack-release-info-block {
+    break-inside: avoid;
+  }
+  @page:right{ 
+    @bottom-left {
+      margin: 5pt 0 15pt 0;
+      content:  string(doctitle);
+      font-size: 9pt;
+      font-family: "Times New Roman", Times, serif;
+      color: #333;
+    }
+
+    @bottom-right { 
+      margin: 5pt 0 15pt 0;
+      content: counter(page);
+      font-size: 9pt;
+      font-family: "Times New Roman", Times, serif;
+    }
+  }
+  @page:left {
+    @bottom-right {
+      margin: 5pt 0 15pt 0;
+      content:  string(doctitle);
+      font-size: 9pt;
+      font-family: "Times New Roman", Times, serif;
+      color: #333;
+    }
+
+    @bottom-left { 
+      margin: 5pt 0 15pt 0;
+      content: counter(page);
+      font-size: 9pt;
+      font-family: "Times New Roman", Times, serif;
+    }
+  }
+  ul.toc a::after {
+    content: leader('.') target-counter(attr(href), page);
+  }
+}
+div.contents {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 12pt;
+}
+ul.toc li {
+  list-style-type: none;
+  padding-left: none;
+  margin-left: none;
+}
+ul.toc a {
+  text-decoration: none;
+  font-weight: bold;
+}
+div.category-block {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 10pt;
+}
+div.category-header {
+  font-weight: bold;
+  font-size: 2em;
+  border-bottom: .1em solid #222222;
+  string-set: doctitle content();
+}
+div.artist-columns {
+  column-count: 3;
+  column-width: auto;
+  column-gap: 1.5em;
+  column-rule: thin dotted #666666;
+}
+div.artist-block {
+  padding-bottom: .5em;
+}
+div.artist-header {
+  font-weight: bold;
+  font-size: 1.25em;
+  border-bottom: .05em solid #444444;
+}
+div.release-block {
+
+}
+div.soundtrack-artist-block {
+
+}
+div.release-info-block {
+  border-bottom: .05em dashed #666666;  
+}
+div.soundtrack-release-info-block {
+  border-bottom: .05em dashed #666666;  
+}
+div.release-filed-block {
+  color: #666666;
+  font-size: .66em;
+  font-style: italic;
+}
+span.release-year {
+  font-size: .8em;
+}
+span.release-title {
+  padding-left: .25em;
+  border-left: .05em dotted #666666;
+}
+span.soundtrack-release-title {
+  padding-left: .25em;
+  border-left: .05em dotted #666666;
+  font-weight: bold;
+}
+span.release-filed-info {
+  
+}
+span.formats {
+  color: #666666;
+  font-size: .66em;
+  white-space: nowrap;
+}

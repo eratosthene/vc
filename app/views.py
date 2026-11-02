@@ -4,7 +4,8 @@ from flask_appbuilder.models.mongoengine.interface import MongoEngineInterface
 from flask_appbuilder.actions import action
 from app import appbuilder
 from app.models import CollectionItem, Artist, Genre, Style, Category, Folder
-from app.widgets import CollectionListWidget
+from app.widgets import CollectionModelListWidget
+from app.printview import PrintView
 
 class CollectionItemModelView(CompactCRUDMixin,ModelView):
     datamodel = MongoEngineInterface(CollectionItem)
@@ -21,10 +22,10 @@ class CollectionItemModelView(CompactCRUDMixin,ModelView):
     edit_columns = [
         'categories'
     ]
-    base_order = ('artists','desc')
 
 class CollectionModelView(ModelView):
     datamodel = MongoEngineInterface(CollectionItem)
+    list_widget = CollectionModelListWidget
     list_columns = [
         'artists',
         'title',
@@ -35,7 +36,65 @@ class CollectionModelView(ModelView):
         'folder',
         'filed_under'
     ]
-    base_order = ('artists','asc')
+    edit_columns = [
+        'artists',
+        'title',
+        'year',
+        'master_id',
+        'master_year',
+        'categories',
+        'genres',
+        'styles',
+        'media_condition',
+        'sleeve_condition',
+        'item_notes',
+        'listened',
+        'includes',
+        'folder',
+        'filed_under'
+    ]
+    add_columns = [
+        'artists',
+        'title',
+        'year',
+        'master_id',
+        'master_year',
+        'categories',
+        'genres',
+        'styles',
+        'media_condition',
+        'sleeve_condition',
+        'item_notes',
+        'listened',
+        'includes',
+        'folder',
+        'filed_under'
+    ]
+    show_columns = [
+        'instance_id',
+        'release_show',
+        'title',
+        'year',
+        'artists',
+        'genres',
+        'styles',
+        'master_show',
+        'master_year',
+        'categories',
+        'folder',
+        'filed_under',
+        'formats',
+        'media_condition',
+        'sleeve_condition',
+        'item_notes',
+        'listened',
+        'includes',
+        'released'
+    ]
+    label_columns = {
+        'release_show': 'Release Id',
+        'master_show': 'Master Id'
+    }
 
 class CategoryModelView(ModelView):
     datamodel = MongoEngineInterface(Category)
@@ -50,7 +109,6 @@ class ArtistModelView(ModelView):
         'artist_id',
         'ignore'
     ]
-    base_order = ('name', 'desc')
     related_views = [ CollectionModelView ]
 
 class GenreModelView(ModelView):
@@ -73,12 +131,14 @@ class FolderModelView(ModelView):
     related_views = [ CollectionModelView ]
 
 appbuilder.add_view(CollectionItemModelView, "Categorize")
-appbuilder.add_view(CollectionModelView, "Collection")
-appbuilder.add_view(ArtistModelView, "Artists")
-appbuilder.add_view(GenreModelView, "Genres")
-appbuilder.add_view(StyleModelView, "Styles")
-appbuilder.add_view(FolderModelView, "Folders")
-appbuilder.add_view(CategoryModelView, "Categories")
+appbuilder.add_view(CollectionModelView, "Collection", category="Manage")
+appbuilder.add_view(ArtistModelView, "Artists", category="Manage")
+appbuilder.add_view(GenreModelView, "Genres", category="Manage")
+appbuilder.add_view(StyleModelView, "Styles", category="Manage")
+appbuilder.add_view(FolderModelView, "Folders", category="Manage")
+appbuilder.add_view(CategoryModelView, "Categories", category="Manage")
+
+appbuilder.add_view(PrintView, 'Print View')
 
 
 """
