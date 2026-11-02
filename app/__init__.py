@@ -13,7 +13,7 @@ logging.basicConfig(format='%(asctime)s:%(levelname)s:%(name)s:%(message)s')
 logging.getLogger().setLevel(logging.INFO)
 
 app = Flask(__name__)
-app.config.from_envvar('VC_SETTINGS')
+app.config.from_object('config')
 db = MongoEngine(app)
 appbuilder = AppBuilder(app, security_manager_class=SecurityManager, indexview=MyIndexView)
 
