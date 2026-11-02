@@ -4,7 +4,7 @@ RUN apt-get update \
   && apt-get install -y ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-COPY ./vc.cfg /vc.cfg
+COPY ./config.py /app/config.py
 COPY ./uwsgi.ini /app/uwsgi.ini
 COPY ./requirements.txt /requirements.txt
 RUN pip install --upgrade -r /requirements.txt
@@ -13,7 +13,7 @@ RUN sed -i 's/int(pk)/str(pk)/g' /usr/local/lib/python3.10/site-packages/flask_a
 COPY ./app /app/app
 
 ENV STATIC_PATH /usr/local/lib/python3.10/site-packages/flask_appbuilder/static
-ENV VC_SETTINGS=/vc.cfg
+COPY ./app/static/* /usr/local/lib/python3.10/site-packages/flask_appbuilder/static
 ENV LISTEN_PORT=19999
 EXPOSE 19999
 

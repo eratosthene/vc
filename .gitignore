@@ -7,3 +7,11 @@ app.db
 env
 venv
 *.sublime*
+
+# Local app config (holds the secret key and Discogs token); copy from config.py.tpl
+config.py
+# The old settings file, from before config.py
+vc.cfg
+# Secrets for docker; never commit them
+docker/.env
+.env
