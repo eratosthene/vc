@@ -13,6 +13,7 @@ RUN sed -i 's/int(pk)/str(pk)/g' /usr/local/lib/python3.10/site-packages/flask_a
 COPY ./app /app/app
 
 ENV STATIC_PATH /usr/local/lib/python3.10/site-packages/flask_appbuilder/static
+COPY ./app/static/* /usr/local/lib/python3.10/site-packages/flask_appbuilder/static
 ENV LISTEN_PORT=19999
 EXPOSE 19999
 
