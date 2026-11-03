@@ -40,7 +40,6 @@ from app.models import (  # noqa: E402
     MediaCondition,
     SleeveCondition,
     Style,
-    set_artists,
 )
 
 
@@ -99,8 +98,14 @@ def copy_simple(report, mongo, kind, collection, model, field, mongo_field=None)
         if name in seen:
             report.problem(
                 kind,
-                label(doc) + " has the same " + mongo_field + " as " + seen[name]
-                + " (" + repr(name) + "); both map to one row",
+                label(doc)
+                + " has the same "
+                + mongo_field
+                + " as "
+                + seen[name]
+                + " ("
+                + repr(name)
+                + "); both map to one row",
             )
         else:
             seen[name] = label(doc)
@@ -135,7 +140,9 @@ def copy_artists(report, mongo):
                     },
                 )
         except sa.exc.SQLAlchemyError as e:
-            report.problem("artist", label(doc) + " " + repr(doc["name"]) + ": " + str(e.orig))
+            report.problem(
+                "artist", label(doc) + " " + repr(doc["name"]) + ": " + str(e.orig)
+            )
             continue
         ids[doc["_id"]] = row
     return ids
@@ -161,7 +168,9 @@ def copy_folders(report, mongo, not_lp):
                     {"name": doc["name"], "counts_as_lp": not flagged},
                 )
         except sa.exc.SQLAlchemyError as e:
-            report.problem("folder", label(doc) + " " + repr(doc["name"]) + ": " + str(e.orig))
+            report.problem(
+                "folder", label(doc) + " " + repr(doc["name"]) + ": " + str(e.orig)
+            )
             continue
         ids[doc["_id"]] = row
     for x in not_lp:
@@ -181,19 +190,29 @@ def copy_items(report, mongo, maps):
             report.problem(what, "has no instance_id, release_id or title; skipped")
             continue
         refs = {}
-        for field, mapname in (("folder", "folder"), ("filed_under", "artist"),
-                               ("media_condition", "media"), ("sleeve_condition", "sleeve")):
+        for field, mapname in (
+            ("folder", "folder"),
+            ("filed_under", "artist"),
+            ("media_condition", "media"),
+            ("sleeve_condition", "sleeve"),
+        ):
             ref = doc.get(field)
             if ref is None:
                 refs[field] = None
             elif ref in maps[mapname]:
                 refs[field] = maps[mapname][ref]
             else:
-                report.problem(what, field + " " + str(ref) + " matches nothing; left empty")
+                report.problem(
+                    what, field + " " + str(ref) + " matches nothing; left empty"
+                )
                 refs[field] = None
         lists = {}
-        for field, mapname in (("artists", "artist"), ("genres", "genre"),
-                               ("styles", "style"), ("categories", "category")):
+        for field, mapname in (
+            ("artists", "artist"),
+            ("genres", "genre"),
+            ("styles", "style"),
+            ("categories", "category"),
+        ):
             rows = []
             for ref in doc.get(field) or []:
                 if ref in maps[mapname]:
@@ -201,7 +220,9 @@ def copy_items(report, mongo, maps):
                     if row not in rows:
                         rows.append(row)
                 else:
-                    report.problem(what, field + " " + str(ref) + " matches nothing; left out")
+                    report.problem(
+                        what, field + " " + str(ref) + " matches nothing; left out"
+                    )
             lists[field] = rows
         if not lists["artists"]:
             report.problem(what, "has no artists that match")
@@ -226,23 +247,22 @@ def copy_items(report, mongo, maps):
                     item_notes=doc.get("item_notes"),
                     listened=doc.get("listened"),
                     includes=doc.get("includes"),
+                    artists=lists["artists"],
                     genres=lists["genres"],
                     styles=lists["styles"],
                     categories=lists["categories"],
                     formats=[
                         CollectionItemFormat(
-                            position=position,
                             name=f.get("name"),
                             qty=f.get("qty"),
                             text=f.get("text"),
                             descriptions=f.get("descriptions") or [],
                         )
-                        for position, f in enumerate(doc.get("formats") or [])
+                        for f in doc.get("formats") or []
                     ],
                 )
                 db.session.add(item)
                 db.session.flush()
-                set_artists(db.session, item, lists["artists"])
             report.created["item"] += 1
         except sa.exc.SQLAlchemyError as e:
             report.problem(what, "not copied: " + str(getattr(e, "orig", e)))
@@ -255,7 +275,9 @@ def table_count(name):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--mongo-uri", required=True, help="MongoDB URI, with the database")
+    parser.add_argument(
+        "--mongo-uri", required=True, help="MongoDB URI, with the database"
+    )
     parser.add_argument("--mongo-db", help="database name, if the URI has none")
     parser.add_argument("--dry-run", action="store_true", help="write nothing")
     parser.add_argument(
@@ -271,12 +293,27 @@ def main():
     client = pymongo.MongoClient(args.mongo_uri, serverSelectionTimeoutMS=10000)
     name = args.mongo_db or client.get_default_database(default="vc").name
     database = client[name]
-    mongo = {n: ReadOnlyCollection(database[n]) for n in database.list_collection_names()}
-    wanted = ["collection_item", "artist", "genre", "style", "category", "folder",
-              "media_condition", "sleeve_condition"]
+    mongo = {
+        n: ReadOnlyCollection(database[n]) for n in database.list_collection_names()
+    }
+    wanted = [
+        "collection_item",
+        "artist",
+        "genre",
+        "style",
+        "category",
+        "folder",
+        "media_condition",
+        "sleeve_condition",
+    ]
     for n in wanted:
         mongo.setdefault(n, ReadOnlyCollection(database[n]))
-    print("Mongo database:", name, "| target:", db.engine.url.render_as_string(hide_password=True))
+    print(
+        "Mongo database:",
+        name,
+        "| target:",
+        db.engine.url.render_as_string(hide_password=True),
+    )
 
     tables = sa.inspect(db.engine).get_table_names()
     if "alembic_version" not in tables or "collection_item" not in tables:
@@ -289,11 +326,25 @@ def main():
             "artist": copy_artists(report, mongo),
             "genre": copy_simple(report, mongo, "genre", "genre", Genre, "name"),
             "style": copy_simple(report, mongo, "style", "style", Style, "name"),
-            "category": copy_simple(report, mongo, "category", "category", Category, "name"),
-            "media": copy_simple(report, mongo, "media condition", "media_condition",
-                                 MediaCondition, "label"),
-            "sleeve": copy_simple(report, mongo, "sleeve condition", "sleeve_condition",
-                                  SleeveCondition, "label"),
+            "category": copy_simple(
+                report, mongo, "category", "category", Category, "name"
+            ),
+            "media": copy_simple(
+                report,
+                mongo,
+                "media condition",
+                "media_condition",
+                MediaCondition,
+                "label",
+            ),
+            "sleeve": copy_simple(
+                report,
+                mongo,
+                "sleeve condition",
+                "sleeve_condition",
+                SleeveCondition,
+                "label",
+            ),
         }
         copy_items(report, mongo, maps)
 
@@ -316,17 +367,40 @@ def main():
         for kind, collection, table in rows:
             print(
                 "%-18s %8d %9d %9d %9d"
-                % (kind, mongo[collection].count_documents({}), report.created[kind],
-                   report.existing[kind], table_count(table))
+                % (
+                    kind,
+                    mongo[collection].count_documents({}),
+                    report.created[kind],
+                    report.existing[kind],
+                    table_count(table),
+                )
             )
-        print("%-18s %8d %9s %9s %9d" % ("item formats", embedded["formats"], "", "",
-                                          table_count("collection_item_format")))
-        print("%-18s %8d %9s %9s %9d" % ("item artist links", embedded["artist links"], "", "",
-                                          table_count("collection_item_artist")))
+        print(
+            "%-18s %8d %9s %9s %9d"
+            % (
+                "item formats",
+                embedded["formats"],
+                "",
+                "",
+                table_count("collection_item_format"),
+            )
+        )
+        print(
+            "%-18s %8d %9s %9s %9d"
+            % (
+                "item artist links",
+                embedded["artist links"],
+                "",
+                "",
+                table_count("collection_item_artist"),
+            )
+        )
         if args.dry_run:
             db.session.rollback()
-            print("\nDry run: nothing was written. (Counts above are from inside the"
-                  " rolled-back transaction.)")
+            print(
+                "\nDry run: nothing was written. (Counts above are from inside the"
+                " rolled-back transaction.)"
+            )
         else:
             db.session.commit()
             print("\nCommitted.")

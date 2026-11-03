@@ -130,7 +130,6 @@ def upgrade():
         "collection_item_artist",
         sa.Column("collection_item_id", sa.Integer(), nullable=False),
         sa.Column("artist_id", sa.Integer(), nullable=False),
-        sa.Column("position", sa.Integer(), server_default="0", nullable=False),
         sa.ForeignKeyConstraint(
             ["artist_id"],
             ["artist.id"],
@@ -159,7 +158,6 @@ def upgrade():
         "collection_item_format",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("collection_item_id", sa.Integer(), nullable=False),
-        sa.Column("position", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(length=100), nullable=False),
         sa.Column("qty", sa.Integer(), nullable=True),
         sa.Column("text", sa.String(length=255), nullable=True),
@@ -168,7 +166,6 @@ def upgrade():
             ["collection_item_id"], ["collection_item.id"], ondelete="CASCADE"
         ),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("collection_item_id", "position"),
         mysql_charset="utf8mb4",
     )
     op.create_table(

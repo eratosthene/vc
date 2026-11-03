@@ -66,7 +66,6 @@ def add_discogs_release(item):
         Artist,
         Genre,
         Style,
-        set_artists,
     )
 
     folder = db.session.query(Folder).filter_by(discogs_id=item.folder_id).one()
@@ -113,19 +112,18 @@ def add_discogs_release(item):
     collection_item.master_year = master_year
     collection_item.formats = [
         CollectionItemFormat(
-            position=position,
             name=f["name"],
             qty=int(f["qty"]) if f.get("qty") else None,
             text=f.get("text"),
             descriptions=f.get("descriptions", []),
         )
-        for position, f in enumerate(item.release.formats)
+        for f in item.release.formats
     ]
     collection_item.released = item.release.fetch("released")
     collection_item.folder = folder
     for field, value in notes.items():
         setattr(collection_item, field, value)
-    set_artists(db.session, collection_item, artists)
+    collection_item.artists = artists
     db.session.commit()
     logger.debug(collection_item)
 
