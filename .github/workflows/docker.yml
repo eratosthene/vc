@@ -1,0 +1,88 @@
+name: Docker build
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
+
+      - name: Build image
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: false
+          load: true
+          tags: vc:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The app (and the entrypoint's `flask setup-db`) needs a config.py and
+      # a database, so skip the entrypoint and just check the packages it runs
+      # on are installed and importable in the image, and that config.py,
+      # which holds the live credentials, isn't in it.
+      - name: Check the image's packages import
+        id: smoke
+        run: >-
+          docker run --rm --entrypoint python vc:ci -c
+          "import os, flask_appbuilder, flask_migrate, gunicorn, pymysql, discogs_client;
+          assert not os.path.exists('/app/config.py'), 'config.py is in the image'"
+
+      - name: Get image size
+        id: size
+        if: steps.build.outcome == 'success'
+        run: |
+          bytes=$(docker image inspect vc:ci --format '{{.Size}}')
+          echo "mb=$((bytes / 1024 / 1024))" >> "$GITHUB_OUTPUT"
+
+      # In the PR description rather than a comment, so it doesn't email
+      # everyone on the PR (see .github/scripts/pr-section.js).
+      - name: Add the results to the PR description
+        if: >-
+          !cancelled() &&
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.login != 'dependabot[bot]'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          BUILD: ${{ steps.build.outcome }}
+          SMOKE: ${{ steps.smoke.outcome }}
+          SIZE_MB: ${{ steps.size.outputs.mb }}
+        with:
+          script: |
+            const { BUILD, SMOKE, SIZE_MB } = process.env;
+            const ok = BUILD === "success" && SMOKE === "success";
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const sha = context.payload.pull_request.head.sha.slice(0, 7);
+            const body = [
+              `### ${ok ? "✅" : "❌"} Docker build ${ok ? "passed" : "failed"}`,
+              "",
+              "| Step | Result |",
+              "| --- | --- |",
+              `| Build image | ${BUILD} |`,
+              `| Packages import | ${SMOKE || "skipped"} |`,
+              SIZE_MB ? `| Image size | ${SIZE_MB} MB |` : null,
+              "",
+              `Commit ${sha} · [workflow run](${runUrl})`,
+            ].filter((line) => line !== null).join("\n");
+
+            const prSection = require("./.github/scripts/pr-section.js");
+            await prSection({ github, context, core }, "vc-docker-build", body);
