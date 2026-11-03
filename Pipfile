@@ -26,3 +26,6 @@ flask-mongoengine-3 = "*"
 gunicorn = "*"
 pymysql = "*"
 flask-migrate = "*"
+
+[requires]
+python_version = "3.12"
