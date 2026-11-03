@@ -1,0 +1,28 @@
+# The live server's container. Run from the repo root:
+#
+#   docker/live-up.sh
+#
+# Settings aren't in the image: config.py is mounted from the repo root, so a
+# change to it needs the container recreated, not a rebuild:
+# `docker/live-up.sh -n`. There's no database service: config.py's
+# SQLALCHEMY_DATABASE_URI points at the MariaDB server's `vc` database. Paths
+# here are relative to this file's folder, docker/.
+name: vc
+
+services:
+  vc:
+    image: vc:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ../config.py
+        target: /app/config.py
+        read_only: true
+        # Fail if it's missing, rather than make an empty folder in its place.
+        bind:
+          create_host_path: false
+    ports:
+      - "19999:19999"
