@@ -3,14 +3,14 @@
 # Turn Pipfile.lock into a requirements file for pip, so the lock is the only
 # list of versions to keep up to date. Pipenv stays in this stage, out of the
 # image.
-FROM python:3.10-alpine AS requirements
+FROM python:3.12-alpine AS requirements
 RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install pipenv
 WORKDIR /lock
 COPY ./Pipfile ./Pipfile.lock ./
 RUN pipenv requirements > requirements.txt
 
-FROM python:3.10-alpine
+FROM python:3.12-alpine
 
 COPY --from=requirements /lock/requirements.txt /app/requirements.txt
 
