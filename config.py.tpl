@@ -8,11 +8,14 @@ from flask_appbuilder.security.manager import AUTH_DB
 # string, e.g. the output of: python3 -c "import secrets; print(secrets.token_hex())"
 SECRET_KEY = "change-me"
 
-# The MongoDB connection, passed to flask-mongoengine. The database name goes
-# at the end of the host URI.
-MONGODB_SETTINGS = {
-    "host": "mongodb://localhost:27017/vc",
-}
+# The database connection, as a SQLAlchemy URL. vc has its own `vc` database,
+# and a user with rights on that database only, on the MariaDB server. The URL
+# below is a placeholder: the real user, password and host go in config.py
+# only, never in this file. Keep ?charset=utf8mb4 so artist and title names in
+# any script survive. A password with special characters, such as @ or /, has
+# to be percent-encoded.
+SQLALCHEMY_DATABASE_URI = "mysql+pymysql://vc:change-me@localhost/vc?charset=utf8mb4"
+SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 # Flask-WTF flag for CSRF
 CSRF_ENABLED = True
@@ -27,7 +30,7 @@ APP_NAME = "vc"
 # AUTHENTICATION CONFIG
 # ----------------------------------------------------
 # The authentication type. AUTH_DB is username/password, with the users kept
-# in MongoDB.
+# in the database.
 AUTH_TYPE = AUTH_DB
 
 # ---------------------------------------------------

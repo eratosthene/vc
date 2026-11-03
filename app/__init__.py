@@ -1,9 +1,9 @@
 import logging
+import click
+import sqlalchemy as sa
 from flask import Flask
-from flask_appbuilder.security.mongoengine.manager import SecurityManager
-from flask_appbuilder import AppBuilder
-from flask_mongoengine import MongoEngine
-from app.index import MyIndexView
+from flask_appbuilder import SQLA, AppBuilder
+from flask_migrate import Migrate, stamp, upgrade
 
 """
  Logging configuration
@@ -14,9 +14,39 @@ logging.getLogger().setLevel(logging.INFO)
 
 app = Flask(__name__)
 app.config.from_object("config")
-db = MongoEngine(app)
-appbuilder = AppBuilder(
-    app, security_manager_class=SecurityManager, indexview=MyIndexView
-)
+# Flask-AppBuilder's SQLA is Flask-SQLAlchemy with Flask-AppBuilder's Model as
+# the models' base class, so its metadata (ours and the ab_* tables) is on db. It
+# also makes Flask-SQLAlchemy 2 work with SQLAlchemy 1.4. Flask-AppBuilder 5 drops
+# it: use Flask-SQLAlchemy's SQLAlchemy(app, model_class=Model) then (#6).
+db = SQLA(app)
+migrate = Migrate(app, db)
+# The views import `db`, so they can only be imported once it exists.
+from app.index import MyIndexView  # noqa: E402
 
-from app import views  # noqa: E402, F401
+# Flask-AppBuilder reads the config and sets up its security tables through
+# current_app, so it needs an app context, here and when adding views.
+with app.app_context():
+    appbuilder = AppBuilder(app, db.session, indexview=MyIndexView)
+
+
+@app.cli.command("setup-db")
+def setup_db():
+    """Create a new database from the models, or migrate an existing one."""
+    # Importing the app has already created Flask-AppBuilder's ab_* tables
+    # (and, in a new database, only those: see the note in app/index.py).
+    tables = sa.inspect(db.engine).get_table_names()
+    if "alembic_version" in tables:
+        upgrade()
+    else:
+        # The models match the migrations' head, so build the schema from them
+        # and record it as being at head (Alembic's recipe for new databases).
+        from app import models  # noqa: F401
+
+        db.create_all()
+        stamp()
+        click.echo("Created a new database at the latest migration.")
+
+
+# The views import `appbuilder`, so they can only be imported once it exists.
+with app.app_context():
+    from app import views  # noqa: E402, F401

@@ -1,6 +1,7 @@
 from flask import render_template
+from wtforms import BooleanField
 from flask_appbuilder import ModelView, CompactCRUDMixin
-from flask_appbuilder.models.mongoengine.interface import MongoEngineInterface
+from flask_appbuilder.models.sqla.interface import SQLAInterface
 from app import appbuilder
 from app.models import CollectionItem, Artist, Genre, Style, Category, Folder
 from app.widgets import CollectionModelListWidget
@@ -8,7 +9,7 @@ from app.printview import PrintView
 
 
 class CollectionItemModelView(CompactCRUDMixin, ModelView):
-    datamodel = MongoEngineInterface(CollectionItem)
+    datamodel = SQLAInterface(CollectionItem)
     list_columns = [
         "artists",
         "title",
@@ -23,7 +24,7 @@ class CollectionItemModelView(CompactCRUDMixin, ModelView):
 
 
 class CollectionModelView(ModelView):
-    datamodel = MongoEngineInterface(CollectionItem)
+    datamodel = SQLAInterface(CollectionItem)
     list_widget = CollectionModelListWidget
     list_columns = [
         "artists",
@@ -94,32 +95,40 @@ class CollectionModelView(ModelView):
 
 
 class CategoryModelView(ModelView):
-    datamodel = MongoEngineInterface(Category)
+    datamodel = SQLAInterface(Category)
     base_order = ("name", "desc")
     related_views = [CollectionModelView]
 
 
 class ArtistModelView(ModelView):
-    datamodel = MongoEngineInterface(Artist)
-    list_columns = ["name", "sort_name", "artist_id", "ignore"]
+    datamodel = SQLAInterface(Artist)
+    list_columns = ["name", "sort_name", "discogs_id", "ignore"]
+    # These columns aren't nullable, which would make Flask-AppBuilder's
+    # checkbox required, so it could never be unchecked.
+    add_form_extra_fields = {"ignore": BooleanField("Ignore")}
+    edit_form_extra_fields = {"ignore": BooleanField("Ignore")}
     related_views = [CollectionModelView]
 
 
 class GenreModelView(ModelView):
-    datamodel = MongoEngineInterface(Genre)
+    datamodel = SQLAInterface(Genre)
     base_order = ("name", "desc")
     related_views = [CollectionModelView]
 
 
 class StyleModelView(ModelView):
-    datamodel = MongoEngineInterface(Style)
+    datamodel = SQLAInterface(Style)
     base_order = ("name", "desc")
     related_views = [CollectionModelView]
 
 
 class FolderModelView(ModelView):
-    datamodel = MongoEngineInterface(Folder)
-    list_columns = ["name", "folder_id"]
+    datamodel = SQLAInterface(Folder)
+    list_columns = ["name", "discogs_id", "counts_as_lp"]
+    label_columns = {"counts_as_lp": "Counts As LP"}
+    # As for the artists' Ignore: a required checkbox couldn't be unchecked.
+    add_form_extra_fields = {"counts_as_lp": BooleanField("Counts As LP", default=True)}
+    edit_form_extra_fields = {"counts_as_lp": BooleanField("Counts As LP")}
     base_order = ("name", "desc")
     related_views = [CollectionModelView]
 
