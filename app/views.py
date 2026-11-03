@@ -7,128 +7,123 @@ from app.models import CollectionItem, Artist, Genre, Style, Category, Folder
 from app.widgets import CollectionModelListWidget
 from app.printview import PrintView
 
-class CollectionItemModelView(CompactCRUDMixin,ModelView):
+
+class CollectionItemModelView(CompactCRUDMixin, ModelView):
     datamodel = MongoEngineInterface(CollectionItem)
     list_columns = [
-        'artists',
-        'title',
-        'master_year',
-        'categories',
-        'genres',
-        'styles',
-        'folder',
-        'filed_under'
+        "artists",
+        "title",
+        "master_year",
+        "categories",
+        "genres",
+        "styles",
+        "folder",
+        "filed_under",
     ]
-    edit_columns = [
-        'categories'
-    ]
+    edit_columns = ["categories"]
+
 
 class CollectionModelView(ModelView):
     datamodel = MongoEngineInterface(CollectionItem)
     list_widget = CollectionModelListWidget
     list_columns = [
-        'artists',
-        'title',
-        'master_year',
-        'categories',
-        'genres',
-        'styles',
-        'folder',
-        'filed_under'
+        "artists",
+        "title",
+        "master_year",
+        "categories",
+        "genres",
+        "styles",
+        "folder",
+        "filed_under",
     ]
     edit_columns = [
-        'artists',
-        'title',
-        'year',
-        'master_id',
-        'master_year',
-        'categories',
-        'genres',
-        'styles',
-        'media_condition',
-        'sleeve_condition',
-        'item_notes',
-        'listened',
-        'includes',
-        'folder',
-        'filed_under'
+        "artists",
+        "title",
+        "year",
+        "master_id",
+        "master_year",
+        "categories",
+        "genres",
+        "styles",
+        "media_condition",
+        "sleeve_condition",
+        "item_notes",
+        "listened",
+        "includes",
+        "folder",
+        "filed_under",
     ]
     add_columns = [
-        'artists',
-        'title',
-        'year',
-        'master_id',
-        'master_year',
-        'categories',
-        'genres',
-        'styles',
-        'media_condition',
-        'sleeve_condition',
-        'item_notes',
-        'listened',
-        'includes',
-        'folder',
-        'filed_under'
+        "artists",
+        "title",
+        "year",
+        "master_id",
+        "master_year",
+        "categories",
+        "genres",
+        "styles",
+        "media_condition",
+        "sleeve_condition",
+        "item_notes",
+        "listened",
+        "includes",
+        "folder",
+        "filed_under",
     ]
     show_columns = [
-        'instance_id',
-        'release_show',
-        'title',
-        'year',
-        'artists',
-        'genres',
-        'styles',
-        'master_show',
-        'master_year',
-        'categories',
-        'folder',
-        'filed_under',
-        'formats',
-        'media_condition',
-        'sleeve_condition',
-        'item_notes',
-        'listened',
-        'includes',
-        'released'
+        "instance_id",
+        "release_show",
+        "title",
+        "year",
+        "artists",
+        "genres",
+        "styles",
+        "master_show",
+        "master_year",
+        "categories",
+        "folder",
+        "filed_under",
+        "formats",
+        "media_condition",
+        "sleeve_condition",
+        "item_notes",
+        "listened",
+        "includes",
+        "released",
     ]
-    label_columns = {
-        'release_show': 'Release Id',
-        'master_show': 'Master Id'
-    }
+    label_columns = {"release_show": "Release Id", "master_show": "Master Id"}
+
 
 class CategoryModelView(ModelView):
     datamodel = MongoEngineInterface(Category)
-    base_order = ('name','desc')
-    related_views = [ CollectionModelView ]
+    base_order = ("name", "desc")
+    related_views = [CollectionModelView]
+
 
 class ArtistModelView(ModelView):
     datamodel = MongoEngineInterface(Artist)
-    list_columns = [
-        'name',
-        'sort_name',
-        'artist_id',
-        'ignore'
-    ]
-    related_views = [ CollectionModelView ]
+    list_columns = ["name", "sort_name", "artist_id", "ignore"]
+    related_views = [CollectionModelView]
+
 
 class GenreModelView(ModelView):
     datamodel = MongoEngineInterface(Genre)
-    base_order = ('name', 'desc')
-    related_views = [ CollectionModelView ]
+    base_order = ("name", "desc")
+    related_views = [CollectionModelView]
+
 
 class StyleModelView(ModelView):
     datamodel = MongoEngineInterface(Style)
-    base_order = ('name', 'desc')
-    related_views = [ CollectionModelView ]
-    
+    base_order = ("name", "desc")
+    related_views = [CollectionModelView]
+
+
 class FolderModelView(ModelView):
     datamodel = MongoEngineInterface(Folder)
-    list_columns = [
-        'name',
-        'folder_id'
-    ]
-    base_order = ('name', 'desc')
-    related_views = [ CollectionModelView ]
+    list_columns = ["name", "folder_id"]
+    base_order = ("name", "desc")
+    related_views = [CollectionModelView]
+
 
 appbuilder.add_view(CollectionItemModelView, "Categorize")
 appbuilder.add_view(CollectionModelView, "Collection", category="Manage")
@@ -138,13 +133,16 @@ appbuilder.add_view(StyleModelView, "Styles", category="Manage")
 appbuilder.add_view(FolderModelView, "Folders", category="Manage")
 appbuilder.add_view(CategoryModelView, "Categories", category="Manage")
 
-appbuilder.add_view(PrintView, 'Print View')
+appbuilder.add_view(PrintView, "Print View")
 
 
 """
     Application wide 404 error handler
 """
+
+
 @appbuilder.app.errorhandler(404)
 def page_not_found(e):
-    return render_template('404.html', base_template=appbuilder.base_template, appbuilder=appbuilder), 404
-
+    return render_template(
+        "404.html", base_template=appbuilder.base_template, appbuilder=appbuilder
+    ), 404
