@@ -1,7 +1,6 @@
 import logging
 from flask_appbuilder import IndexView
 from flask_appbuilder.views import expose
-from flask_appbuilder.models.mongoengine.interface import MongoEngineInterface
 from app.models import (
     CollectionItem,
     Folder,
@@ -16,7 +15,6 @@ from flask import redirect, current_app, request
 from mongoengine import DoesNotExist
 import discogs_client
 import bson
-import re
 
 logger = logging.getLogger()
 
@@ -26,7 +24,6 @@ def add_discogs_release(item):
     artists = []
     genres = []
     styles = []
-    notes = []
     for artist in item.release.artists:
         try:
             adoc = Artist.objects().get(artist_id=artist.id)
@@ -59,7 +56,7 @@ def add_discogs_release(item):
     mc = None
     sc = None
     n = None
-    l = None
+    listened = None
     i = None
     for note in item.notes:
         if note["field_id"] == 1:
@@ -80,9 +77,9 @@ def add_discogs_release(item):
             n = note["value"].rstrip()
         if note["field_id"] == 4:
             if note["value"].rstrip() == "Yes":
-                l = True
+                listened = True
             else:
-                l = False
+                listened = False
         if note["field_id"] == 5:
             i = note["value"].rstrip()
     master_id = 0
@@ -108,7 +105,7 @@ def add_discogs_release(item):
         set__media_condition=mc,
         set__sleeve_condition=sc,
         set__item_notes=n,
-        set__listened=l,
+        set__listened=listened,
         set__includes=i,
     )
     collection_item.save()
@@ -363,7 +360,7 @@ class MyIndexView(IndexView):
             mc = None
             sc = None
             n = None
-            l = None
+            listened = None
             i = None
             for note in item.notes:
                 if note["field_id"] == 1:
@@ -384,9 +381,9 @@ class MyIndexView(IndexView):
                     n = note["value"].rstrip()
                 if note["field_id"] == 4:
                     if note["value"].rstrip() == "Yes":
-                        l = True
+                        listened = True
                     else:
-                        l = False
+                        listened = False
                 if note["field_id"] == 5:
                     i = note["value"].rstrip()
             collection_item = CollectionItem.objects(
@@ -395,7 +392,7 @@ class MyIndexView(IndexView):
                 set__media_condition=mc,
                 set__sleeve_condition=sc,
                 set__item_notes=n,
-                set__listened=l,
+                set__listened=listened,
                 set__includes=i,
             )
             collection_item.save()

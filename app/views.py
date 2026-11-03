@@ -1,7 +1,6 @@
 from flask import render_template
 from flask_appbuilder import ModelView, CompactCRUDMixin
 from flask_appbuilder.models.mongoengine.interface import MongoEngineInterface
-from flask_appbuilder.actions import action
 from app import appbuilder
 from app.models import CollectionItem, Artist, Genre, Style, Category, Folder
 from app.widgets import CollectionModelListWidget

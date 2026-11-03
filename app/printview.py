@@ -1,7 +1,5 @@
-import logging
 from flask_appbuilder import BaseView
 from flask_appbuilder.views import expose
-from flask_appbuilder.models.mongoengine.interface import MongoEngineInterface
 from app.models import CollectionItem, Category, Folder
 import re
 
@@ -31,7 +29,7 @@ def releaseSortFunc(e):
 
 def slotSortFunc(e):
     n = e.item_notes
-    p = re.compile("slot\s+([0-9]+)")
+    p = re.compile(r"slot\s+([0-9]+)")
     s = p.search(n)
     p = re.compile("(Top|Bottom) drawer")
     d = p.search(n)
