@@ -9,13 +9,14 @@ from app.index import MyIndexView
  Logging configuration
 """
 
-logging.basicConfig(format='%(asctime)s:%(levelname)s:%(name)s:%(message)s')
+logging.basicConfig(format="%(asctime)s:%(levelname)s:%(name)s:%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
 app = Flask(__name__)
-app.config.from_object('config')
+app.config.from_object("config")
 db = MongoEngine(app)
-appbuilder = AppBuilder(app, security_manager_class=SecurityManager, indexview=MyIndexView)
+appbuilder = AppBuilder(
+    app, security_manager_class=SecurityManager, indexview=MyIndexView
+)
 
-from app import views
-
+from app import views  # noqa: E402, F401
