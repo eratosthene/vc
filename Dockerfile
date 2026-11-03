@@ -28,6 +28,8 @@ RUN --mount=type=cache,id=vc-pip,target=/root/.cache/pip \
 WORKDIR /app
 COPY ./app /app/app
 COPY ./migrations /app/migrations
+# For the one-off move from MongoDB (#4); remove it with the Mongo packages.
+COPY ./scripts /app/scripts
 ENV FLASK_APP=app
 
 RUN adduser -D vc
