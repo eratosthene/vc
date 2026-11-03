@@ -1,19 +1,46 @@
-FROM tiangolo/uwsgi-nginx-flask:python3.10
+# syntax=docker/dockerfile:1
 
-RUN apt-get update \
-  && apt-get install -y ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
+# Turn Pipfile.lock into a requirements file for pip, so the lock is the only
+# list of versions to keep up to date. Pipenv stays in this stage, out of the
+# image.
+FROM python:3.10-alpine AS requirements
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python -m pip install pipenv
+WORKDIR /lock
+COPY ./Pipfile ./Pipfile.lock ./
+RUN pipenv requirements > requirements.txt
 
-COPY ./config.py /app/config.py
-COPY ./uwsgi.ini /app/uwsgi.ini
-COPY ./requirements.txt /requirements.txt
-RUN pip install --upgrade -r /requirements.txt
-RUN sed -i 's/int(pk)/str(pk)/g' /usr/local/lib/python3.10/site-packages/flask_appbuilder/views.py
-RUN sed -i 's/int(pk)/str(pk)/g' /usr/local/lib/python3.10/site-packages/flask_appbuilder/security/manager.py
+FROM python:3.10-alpine
+
+COPY --from=requirements /lock/requirements.txt /app/requirements.txt
+
+# pymongo and sqlalchemy have no musllinux wheel, so they build from source;
+# without a compiler pip quietly falls back to pure Python. Install, build and
+# remove the build dependencies in one layer so they don't end up in the image.
+# The cache mount keeps pip's downloads between builds.
+RUN --mount=type=cache,id=vc-pip,target=/root/.cache/pip \
+    apk add --no-cache --virtual .build-dependencies build-base \
+    && python -m pip install --upgrade -r /app/requirements.txt \
+    && apk del .build-dependencies
+
+# Flask-AppBuilder assumes integer ids, but Mongo's are not. Each patch fails the
+# build if its target text is missing, so a Flask-AppBuilder upgrade can't
+# silently stop patching. Remove these with the move off MongoDB (#4).
+RUN grep -q 'int(pk)' /usr/local/lib/python3.10/site-packages/flask_appbuilder/views.py \
+    && sed -i 's/int(pk)/str(pk)/g' /usr/local/lib/python3.10/site-packages/flask_appbuilder/views.py
+RUN grep -q 'int(pk)' /usr/local/lib/python3.10/site-packages/flask_appbuilder/security/manager.py \
+    && sed -i 's/int(pk)/str(pk)/g' /usr/local/lib/python3.10/site-packages/flask_appbuilder/security/manager.py
+
+# config.py isn't copied in: it holds the live credentials, so mount it at
+# /app/config.py when running the container.
+WORKDIR /app
 COPY ./app /app/app
 
-ENV STATIC_PATH /usr/local/lib/python3.10/site-packages/flask_appbuilder/static
-COPY ./app/static/* /usr/local/lib/python3.10/site-packages/flask_appbuilder/static
-ENV LISTEN_PORT=19999
-EXPOSE 19999
+RUN adduser -D vc
+USER vc
 
+EXPOSE 19999
+# The long timeout is for Sync and Sync Notes, which run inside the request and
+# can take minutes; gunicorn's default 30 seconds would kill them partway
+# through. Bring it back down when the sync moves out of the request (#11).
+CMD [ "gunicorn", "-w", "2", "--timeout", "600", "--bind", "0.0.0.0:19999", "--access-logfile", "-", "app:app" ]

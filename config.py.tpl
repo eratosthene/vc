@@ -1,8 +1,8 @@
 from flask_appbuilder.security.manager import AUTH_DB
 
 # Copy this file to config.py and fill in the values. config.py is
-# gitignored, so the real secrets never go into git. The app and run.py
-# read it.
+# gitignored, so the real secrets never go into git. The app reads it. In the
+# Docker image it isn't copied in; mount it at /app/config.py.
 
 # Your App secret key. Signs the session cookie; set it to a long random
 # string, e.g. the output of: python3 -c "import secrets; print(secrets.token_hex())"
