@@ -1,7 +1,17 @@
 from flask_appbuilder import BaseView
+from flask import abort
 from flask_appbuilder.views import expose
+from sqlalchemy import func
+from app import db
 from app.models import CollectionItem, Category, Folder
 import re
+
+
+def get_or_404(model, id):
+    row = db.session.get(model, id)
+    if row is None:
+        abort(404)
+    return row
 
 
 def sortFunc(e):
@@ -52,23 +62,30 @@ class PrintView(BaseView):
         showtunes_items = []
         edison_items = []
         if category:
-            c_query = Category.objects(id=category).order_by("name")
+            c_query = (
+                db.session.query(Category)
+                .filter_by(id=category)
+                .order_by(Category.name)
+            )
         else:
-            c_query = Category.objects().order_by("name")
+            c_query = db.session.query(Category).order_by(Category.name)
         for c in c_query:
             categories.append(c)
             artists[c.id] = []
             items[c.id] = {}
+            ci_filters = [CollectionItem.categories.any(Category.id == c.id)]
             if folder:
-                ci_query = CollectionItem.objects(categories=c.id, folder=folder)
+                ci_filters.append(CollectionItem.folder_id == folder)
             elif decade:
                 after = int(decade[:-1]) - 1
                 before = int(decade[:-1]) + 10
-                ci_query = CollectionItem.objects(
-                    categories=c.id, master_year__gt=after, master_year__lt=before
-                )
-            else:
-                ci_query = CollectionItem.objects(categories=c.id)
+                ci_filters.append(CollectionItem.master_year > after)
+                ci_filters.append(CollectionItem.master_year < before)
+            ci_query = (
+                db.session.query(CollectionItem)
+                .filter(*ci_filters)
+                .order_by(CollectionItem.id)
+            )
             for i in ci_query:
                 for a in i.artists:
                     artists[c.id].append(a)
@@ -79,28 +96,17 @@ class PrintView(BaseView):
                 items[c.id][a.id] = []
                 releases = {}
                 masters = []
-                if folder:
-                    cic_query = CollectionItem.objects(
-                        categories=c.id, artists=a.id, folder=folder
-                    )
-                elif decade:
-                    after = int(decade[:-1]) - 1
-                    before = int(decade[:-1]) + 10
-                    cic_query = CollectionItem.objects(
-                        categories=c.id,
-                        artists=a.id,
-                        master_year__gt=after,
-                        master_year__lt=before,
-                    )
-                else:
-                    cic_query = CollectionItem.objects(categories=c.id, artists=a.id)
+                cic_query = ci_query.filter(CollectionItem.artists.any(id=a.id))
                 for i in cic_query:
                     if i.master_id in releases:
                         releases[i.master_id].append(i)  # todo: no master fix
                     else:
                         releases[i.master_id] = [i]
                     masters.append({"master_id": i.master_id, "year": i.master_year})
-                masters = [dict(t) for t in {tuple(d.items()) for d in masters}]
+                # Without duplicates, in the order they were first seen.
+                masters = [
+                    dict(t) for t in dict.fromkeys(tuple(d.items()) for d in masters)
+                ]
                 masters.sort(key=yearSortFunc)
                 # logging.debug(masters)
                 for master_id in releases:
@@ -136,45 +142,37 @@ class PrintView(BaseView):
     def printview(self):
         self.update_redirect()
         lp_total = 0
-        full_total = CollectionItem.objects().count()
+        full_total = db.session.query(CollectionItem).count()
         by_folder = []
         by_category = []
         by_decade = []
-        for f in Folder.objects().order_by("name"):
-            c = CollectionItem.objects(folder=f.id).count()
+        for f in db.session.query(Folder).order_by(Folder.name):
+            c = db.session.query(CollectionItem).filter_by(folder_id=f.id).count()
             by_folder.append({"folder": f, "total": c})
-            if f.name != "Edison Diamond Disc" and f.name != "45s":
+            if f.counts_as_lp:
                 lp_total += c
-        for f in Category.objects().order_by("name"):
-            c = CollectionItem.objects(categories=f.id).count()
+        for f in db.session.query(Category).order_by(Category.name):
+            c = (
+                db.session.query(CollectionItem)
+                .filter(CollectionItem.categories.any(Category.id == f.id))
+                .count()
+            )
             by_category.append({"category": f, "total": c})
-        dc = CollectionItem.objects().aggregate(
-            [
-                {"$match": {"master_year": {"$gt": 0}}},
-                {
-                    "$group": {
-                        "_id": {
-                            "decade": {
-                                "$concat": [
-                                    {"$substr": [{"$toString": "$master_year"}, 0, 3]},
-                                    "0s",
-                                ]
-                            }
-                        },
-                        "count": {"$sum": {"$toInt": 1}},
-                    }
-                },
-                {"$sort": {"_id": 1}},
-            ]
+        decade = func.floor(CollectionItem.master_year / 10) * 10
+        dc = (
+            db.session.query(decade, func.count())
+            .filter(CollectionItem.master_year > 0)
+            .group_by(decade)
+            .order_by(decade)
         )
-        for d in dc:
-            decade = d["_id"]["decade"]
+        for d, count in dc:
+            decade = str(int(d)) + "s"
             after = int(decade[:-1]) - 1
             before = int(decade[:-1]) + 10
             by_decade.append(
                 {
                     "decade": decade,
-                    "count": d["count"],
+                    "count": count,
                     "before": before,
                     "after": after,
                 }
@@ -210,13 +208,13 @@ class PrintView(BaseView):
             edison_items=edison_items,
         )
 
-    @expose("/folder/<string:folder>")
+    @expose("/folder/<int:folder>")
     def folder(self, folder):
         self.update_redirect()
         categories, artists, items, soundtrack_items, showtunes_items, edison_items = (
             self.crunch(folder=folder)
         )
-        pagetitle = "Folder: " + str(Folder.objects.get(id=folder).name)
+        pagetitle = "Folder: " + get_or_404(Folder, folder).name
 
         return self.render_template(
             self.printview_template,
@@ -230,13 +228,13 @@ class PrintView(BaseView):
             edison_items=edison_items,
         )
 
-    @expose("/category/<string:category>")
+    @expose("/category/<int:category>")
     def category(self, category):
         self.update_redirect()
         categories, artists, items, soundtrack_items, showtunes_items, edison_items = (
             self.crunch(category=category)
         )
-        pagetitle = "Category: " + str(Category.objects.get(id=category).name)
+        pagetitle = "Category: " + get_or_404(Category, category).name
 
         return self.render_template(
             self.printview_template,

@@ -23,18 +23,12 @@ RUN --mount=type=cache,id=vc-pip,target=/root/.cache/pip \
     && python -m pip install --upgrade -r /app/requirements.txt \
     && apk del .build-dependencies
 
-# Flask-AppBuilder assumes integer ids, but Mongo's are not. Each patch fails the
-# build if its target text is missing, so a Flask-AppBuilder upgrade can't
-# silently stop patching. Remove these with the move off MongoDB (#4).
-RUN grep -q 'int(pk)' /usr/local/lib/python3.10/site-packages/flask_appbuilder/views.py \
-    && sed -i 's/int(pk)/str(pk)/g' /usr/local/lib/python3.10/site-packages/flask_appbuilder/views.py
-RUN grep -q 'int(pk)' /usr/local/lib/python3.10/site-packages/flask_appbuilder/security/manager.py \
-    && sed -i 's/int(pk)/str(pk)/g' /usr/local/lib/python3.10/site-packages/flask_appbuilder/security/manager.py
-
 # config.py isn't copied in: it holds the live credentials, so mount it at
 # /app/config.py when running the container.
 WORKDIR /app
 COPY ./app /app/app
+COPY ./migrations /app/migrations
+ENV FLASK_APP=app
 
 RUN adduser -D vc
 USER vc
