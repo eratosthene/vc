@@ -6,11 +6,11 @@ exclude: |
 fail_fast: true
 default_language_version:
   python: python3.12
-# Hooks that don't name a stage run on commit only.
-# The pytest pre-push hook, and pre-push in default_install_hook_types, come
-# with the test suite in #7: there is nothing to run yet.
+# The quick checks run on each commit, the test suite on each push.
 default_install_hook_types:
   - pre-commit
+  - pre-push
+# Hooks that don't name a stage run on commit only, not again on push.
 default_stages: [pre-commit]
 repos:
   # Based on: https://gatlen.me/gatlens-opinionated-template/pre-commit/
@@ -84,3 +84,20 @@ repos:
       - id: check-added-large-files
         name: "🌳 git · Block large file commits"
         args: ["--maxkb=5000"]
+
+  # ---------------------------------------------------------------------------- #
+  #                              🧪 Tests (Local)                                #
+  # ---------------------------------------------------------------------------- #
+  # The suite runs before each push rather than each commit. It runs inside the
+  # project's Pipenv environment (`pipenv install --dev`), so it works without
+  # first running `pipenv shell`.
+  - repo: local
+    hooks:
+      - id: pytest
+        name: "🧪 test · Run unit tests"
+        entry: pipenv run pytest tests -q
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

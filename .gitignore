@@ -15,3 +15,6 @@ vc.cfg
 # Secrets for docker; never commit them
 docker/.env
 .env
+.coverage
+htmlcov
+.pytest_cache

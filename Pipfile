@@ -8,6 +8,9 @@ beautifulsoup4 = "*"
 lxml = "*"
 # Only for scripts/migrate_from_mongo.py, which runs once.
 pymongo = "*"
+pytest = "*"
+pytest-mock = "*"
+pytest-cov = "*"
 
 [packages]
 flask = "*"
