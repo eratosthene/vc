@@ -23,19 +23,23 @@ RUN --mount=type=cache,id=vc-pip,target=/root/.cache/pip \
     && python -m pip install --upgrade -r /app/requirements.txt \
     && apk del .build-dependencies
 
-# config.py isn't copied in: it holds the live credentials, so mount it at
-# /app/config.py when running the container.
+# config.py isn't copied in: it holds the live credentials, so the compose
+# files mount it at /app/config.py, and a change to it needs no rebuild.
 WORKDIR /app
 COPY ./app /app/app
 COPY ./migrations /app/migrations
 # For the one-off move from MongoDB (#4); remove it with the Mongo packages.
 COPY ./scripts /app/scripts
+COPY --chmod=755 ./docker/docker-entrypoint.sh /app/docker-entrypoint.sh
 ENV FLASK_APP=app
 
 RUN adduser -D vc
 USER vc
 
 EXPOSE 19999
+# The entrypoint checks config.py is mounted and runs `flask setup-db`, then
+# starts the command below (or whatever the dev compose file runs instead).
+ENTRYPOINT [ "/app/docker-entrypoint.sh" ]
 # The long timeout is for Sync and Sync Notes, which run inside the request and
 # can take minutes; gunicorn's default 30 seconds would kill them partway
 # through. Bring it back down when the sync moves out of the request (#11).
