@@ -83,21 +83,51 @@ def db():
     return vc.db
 
 
-@pytest.fixture(autouse=True)
-def app_context():
-    """
-    Give every test an application context and a clean, isolated database,
-    with the tables from the models and the AppBuilder security tables.
-    """
+def _build_database():
+    """Every table, the Admin role and the views' permissions, and an admin."""
+    vc.db.session.remove()
+    vc.db.drop_all()
+    vc.db.create_all()
+    sm = vc.appbuilder.sm
+    # The Admin role, and the permissions of the views.
+    sm.create_db()
+    vc.appbuilder.add_permissions(update_perms=True)
+    sm.add_user(
+        "admin", "Ad", "Min", "admin@example.com", sm.find_role("Admin"), "password"
+    )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def database():
+    """The database, built once for the whole run."""
     with vc.app.app_context():
+        _build_database()
+    yield
+
+
+@pytest.fixture(autouse=True)
+def app_context(database):
+    """
+    An application context for each test (a shared one would share Flask's `g`,
+    and with it the signed-in user), and empty tables of the app's own when it
+    ends. The security tables stay: building them takes most of a second.
+    """
+    with vc.app.app_context() as ctx:
+        yield ctx
         vc.db.session.remove()
-        vc.db.drop_all()
-        vc.db.create_all()
-        vc.appbuilder.add_permissions(update_perms=True)
-        try:
-            yield vc.app
-        finally:
-            vc.db.session.remove()
+        for table in reversed(vc.db.metadata.sorted_tables):
+            if not table.name.startswith("ab_"):
+                vc.db.session.execute(table.delete())
+        vc.db.session.commit()
+        vc.db.session.remove()
+
+
+@pytest.fixture
+def rebuild_database():
+    """For a test that leaves the database in a state the others can't use."""
+    yield
+    with vc.app.app_context():
+        _build_database()
 
 
 @pytest.fixture
@@ -143,6 +173,8 @@ def make(db):
             kw.setdefault("instance_id", n)
             kw.setdefault("release_id", n)
             kw.setdefault("year", 2000)
+            # Each item has a master of its own, unless a test says otherwise.
+            kw.setdefault("master_id", n)
             kw.setdefault("master_year", kw["year"])
             item = models.CollectionItem(title=title, **kw)
             item.artists = list(artists)
@@ -158,12 +190,8 @@ def client(app):
 
 
 @pytest.fixture
-def admin(app, client):
+def admin(client):
     """The test client, signed in as an admin."""
-    sm = vc.appbuilder.sm
-    sm.add_user(
-        "admin", "Ad", "Min", "admin@example.com", sm.find_role("Admin"), "password"
-    )
     response = client.post(
         "/login/", data={"username": "admin", "password": "password"}
     )
