@@ -1,0 +1,55 @@
+# A local testing session: the app, run from this checkout's code by Flask's
+# reloading dev server, against its own MariaDB. This is the safe place to try
+# migrations and upgrades.
+#
+#   dev-scripts/compose-up.sh   (docker compose -f docker/compose.dev.yml up --build)
+#
+# It needs VC_DEV_DB_PASSWORD in docker/.env, next to this file. The app uses
+# docker/config.dev.py rather than the live config.py, so it can't reach the
+# live database or Discogs. Paths here are relative to this file's folder,
+# docker/. Both ports are on 127.0.0.1 only.
+name: vc-dev
+
+services:
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_DATABASE: vc
+      MARIADB_USER: vc
+      MARIADB_PASSWORD: ${VC_DEV_DB_PASSWORD:?Set VC_DEV_DB_PASSWORD in docker/.env}
+      MARIADB_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - db:/var/lib/mysql
+    # 3308 so it doesn't clash with fbc2's dev database on 3307, and so
+    # `flask run` on this machine (dev-scripts/run-local.sh) can use it too.
+    ports:
+      - "127.0.0.1:3308:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 1m
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: vc:dev
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      VC_DEV_DB_PASSWORD: ${VC_DEV_DB_PASSWORD}
+    # Mounted rather than baked in, so edits show up without a rebuild. The
+    # entrypoint still runs `flask setup-db` first, as on the live server.
+    volumes:
+      - ./config.dev.py:/app/config.py:ro
+      - ../app:/app/app
+      - ../migrations:/app/migrations
+    command: ["flask", "run", "--debug", "--host", "0.0.0.0", "--port", "19999"]
+    ports:
+      - "127.0.0.1:5560:19999"
+
+volumes:
+  db:

@@ -1,6 +1,18 @@
 .git
+.github
+.claude
+.venv
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+# Local files that hold credentials. config.py is mounted into the container,
+# never built into the image.
 config.py
 vc.cfg
-docker/.env
-.env
+**/.env
+# Dev-only: tests, the dev compose files and the local run scripts.
+tests
+dev-scripts
 **/__pycache__
+**/*.pyc
