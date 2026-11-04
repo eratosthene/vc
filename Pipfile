@@ -3,29 +3,23 @@ name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
 
+[packages]
+# 4.5.x for now: Flask 3, SQLAlchemy 2 and FAB 5 come in a later step of #6.
+flask-appbuilder = "~=4.5.2"
+python3-discogs-client = "~=2.7"
+pymysql = "~=1.1"
+flask-migrate = "~=4.1"
+gunicorn = "~=26.2"
+certifi = "*"
+
 [dev-packages]
-beautifulsoup4 = "*"
+pytest = "*"
+pytest-mock = "*"
+# The tests parse HTML with these.
+beautifulsoup4 = "~=4.12"
 lxml = "*"
 # Only for scripts/migrate_from_mongo.py, which runs once.
 pymongo = "*"
-pytest = "*"
-pytest-mock = "*"
-pytest-cov = "*"
-
-[packages]
-flask = "*"
-mongoengine = "*"
-flask-restful = "*"
-flask-appbuilder = "*"
-pillow = "*"
-python-dotenv = "*"
-python3-discogs-client = "*"
-certifi = "*"
-#flask-mongoengine = {editable = true, ref = "v1.1.0", git = "git+https://github.com/idoshr/flask-mongoengine.git"}
-flask-mongoengine-3 = "*"
-gunicorn = "*"
-pymysql = "*"
-flask-migrate = "*"
 
 [requires]
 python_version = "3.12"
