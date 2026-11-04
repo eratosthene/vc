@@ -1,0 +1,45 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pipenv run pytest:*)",
+      "Bash(pipenv run flask --app app db migrate:*)",
+      "Bash(pipenv run flask --app app db check)",
+      "Bash(pipenv run flask --app app db heads)",
+      "Bash(pipenv run flask --app app db history:*)",
+      "Bash(pre-commit run:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run list:*)"
+    ],
+    "deny": [
+      "Read(/config.py)",
+      "Read(/docker/.env)",
+      "Bash(docker compose -f docker/compose.dev.yml down -v:*)",
+      "Bash(docker compose -p vc-dev down -v:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ruff-format.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
