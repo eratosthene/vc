@@ -14,7 +14,7 @@ FROM python:3.12-alpine
 
 COPY --from=requirements /lock/requirements.txt /app/requirements.txt
 
-# pymongo and sqlalchemy have no musllinux wheel, so they build from source;
+# sqlalchemy has no musllinux wheel, so it builds from source;
 # without a compiler pip quietly falls back to pure Python. Install, build and
 # remove the build dependencies in one layer so they don't end up in the image.
 # The cache mount keeps pip's downloads between builds.
