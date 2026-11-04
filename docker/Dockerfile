@@ -40,8 +40,8 @@ EXPOSE 19999
 # The entrypoint checks config.py is mounted and runs `flask setup-db`, then
 # starts the command below (or whatever the dev compose file runs instead).
 ENTRYPOINT [ "/app/docker-entrypoint.sh" ]
-# The sync runs in a background thread (app/syncjob.py), not in a request, so
-# the 600 second timeout it needed (#14) is down to 120. That isn't gunicorn's
-# default 30: the Print View for the whole collection still runs a query per
-# artist in one request (#10). Once that's fixed, the flag can go.
-CMD [ "gunicorn", "-w", "2", "--timeout", "120", "--bind", "0.0.0.0:19999", "--access-logfile", "-", "app:app" ]
+# No --timeout, so gunicorn's default of 30 seconds applies. The sync runs in a
+# background thread (app/syncjob.py), not in a request, and the Print View makes
+# a fixed number of queries (#10): its whole-collection page took under 3
+# seconds for 30,000 items on a throwaway MariaDB.
+CMD [ "gunicorn", "-w", "2", "--bind", "0.0.0.0:19999", "--access-logfile", "-", "app:app" ]

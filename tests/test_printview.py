@@ -1,12 +1,12 @@
 """The Print View: its sort functions, crunch() and every version of the page."""
 
-import re
 from types import SimpleNamespace
 
 import pytest
 from bs4 import BeautifulSoup
 from sqlalchemy import event
 
+from app import models
 from app import printview as pv
 from app.printview import PrintView
 
@@ -111,11 +111,13 @@ class TestSortFunctions:
     def test_slotSortFunc(self, notes, key):
         assert pv.slotSortFunc(SimpleNamespace(item_notes=notes)) == key
 
-    @pytest.mark.parametrize("notes", ["slot 3", "Top drawer", "nothing", None])
-    def test_slotSortFunc_fails_without_a_slot_or_drawer_bug_10(self, notes):
-        # #10: one Edison Diamond Disc without both breaks the whole page.
-        with pytest.raises((AttributeError, TypeError)):
-            pv.slotSortFunc(SimpleNamespace(item_notes=notes))
+    @pytest.mark.parametrize("notes", ["slot 3", "Top drawer", "nothing", "", None])
+    def test_slotSortFunc_puts_an_item_without_a_slot_or_drawer_last(self, notes):
+        key = pv.slotSortFunc(SimpleNamespace(item_notes=notes))
+        assert key == pv.NO_SLOT
+        assert key > pv.slotSortFunc(
+            SimpleNamespace(item_notes="slot 99 Bottom drawer")
+        )
 
 
 class TestCrunch:
@@ -288,27 +290,6 @@ class TestCrunch:
         _, _, items, *_ = crunch()
         assert sorted(i.title for i in items[rock.id][a.id]) == ["One", "Two"]
 
-    def test_no_master_items_from_different_years_are_repeated_bug_10(self, make):
-        # #10 (the "no master fix" todo): the no-master items share one entry
-        # in `releases` but each year adds a `masters` entry, and every one of
-        # them lists all the artist's no-master items again.
-        rock = make.category()
-        a = make.artist()
-        make.item(
-            "One", artists=[a], categories=[rock], master_id=None, master_year=1980
-        )
-        make.item(
-            "Two", artists=[a], categories=[rock], master_id=None, master_year=1990
-        )
-        _, _, items, *_ = crunch()
-        assert sorted(i.title for i in items[rock.id][a.id]) == [
-            "One",
-            "One",
-            "Two",
-            "Two",
-        ]
-
-    @pytest.mark.xfail(strict=True, reason="#10: no-master items are repeated")
     def test_no_master_items_from_different_years_are_listed_once(self, make):
         rock = make.category()
         a = make.artist()
@@ -321,24 +302,88 @@ class TestCrunch:
         _, _, items, *_ = crunch()
         assert [i.title for i in items[rock.id][a.id]] == ["One", "Two"]
 
-    def test_an_edison_item_without_a_slot_breaks_crunch_bug_10(self, make):
-        edison = make.category("Edison Diamond Disc")
-        make.item(
-            "Slotted",
-            artists=[make.artist()],
-            categories=[edison],
-            item_notes="slot 1 Top drawer",
-        )
-        make.item(
-            "Unslotted",
-            artists=[make.artist()],
-            categories=[edison],
-            item_notes="no idea",
-        )
-        with pytest.raises(AttributeError):
-            crunch()
+    def test_no_master_items_of_one_year_are_each_listed_once(self, make):
+        rock = make.category()
+        a = make.artist()
+        for title in ["One", "Two", "Three"]:
+            make.item(
+                title, artists=[a], categories=[rock], master_id=None, master_year=1980
+            )
+        _, _, items, *_ = crunch()
+        assert sorted(i.title for i in items[rock.id][a.id]) == ["One", "Three", "Two"]
 
-    @pytest.mark.xfail(strict=True, reason="#10: an Edison item without a slot raises")
+    def test_no_master_items_are_not_grouped_with_a_master_or_each_other(self, make):
+        rock = make.category()
+        a = make.artist()
+        make.item(
+            "Late",
+            artists=[a],
+            categories=[rock],
+            master_id=7,
+            master_year=1990,
+            year=1990,
+        )
+        make.item(
+            "Nomaster early",
+            artists=[a],
+            categories=[rock],
+            master_id=None,
+            master_year=1970,
+        )
+        make.item(
+            "Same master",
+            artists=[a],
+            categories=[rock],
+            master_id=7,
+            master_year=1990,
+            year=1995,
+        )
+        make.item(
+            "Nomaster mid",
+            artists=[a],
+            categories=[rock],
+            master_id=None,
+            master_year=1980,
+        )
+        _, _, items, *_ = crunch()
+        assert [i.title for i in items[rock.id][a.id]] == [
+            "Nomaster early",
+            "Nomaster mid",
+            "Late",
+            "Same master",
+        ]
+
+    def test_the_releases_of_one_master_are_together_by_release_date(self, make):
+        rock = make.category()
+        a = make.artist()
+        make.item(
+            "Reissue",
+            artists=[a],
+            categories=[rock],
+            master_id=5,
+            master_year=1970,
+            year=1990,
+            released="1990-01-01",
+        )
+        make.item(
+            "Other", artists=[a], categories=[rock], master_id=6, master_year=1975
+        )
+        make.item(
+            "Original",
+            artists=[a],
+            categories=[rock],
+            master_id=5,
+            master_year=1970,
+            year=1970,
+            released="1970-05-05",
+        )
+        _, _, items, *_ = crunch()
+        assert [i.title for i in items[rock.id][a.id]] == [
+            "Original",
+            "Reissue",
+            "Other",
+        ]
+
     def test_an_edison_item_without_a_slot_is_listed_last(self, make):
         edison = make.category("Edison Diamond Disc")
         a = make.artist()
@@ -349,18 +394,6 @@ class TestCrunch:
         *_, edisons = crunch()
         assert [i.title for i in edisons] == ["Slotted", "Unslotted"]
 
-    def test_queries_grow_with_the_number_of_artists_bug_10(self, db, make, app):
-        # #10: one query per category, plus one per category and artist.
-        rock = make.category()
-        for n in range(3):
-            make.item(f"I{n}", artists=[make.artist(f"A{n}")], categories=[rock])
-        few = count_queries(db, crunch)
-        for n in range(3, 8):
-            make.item(f"I{n}", artists=[make.artist(f"A{n}")], categories=[rock])
-        many = count_queries(db, crunch)
-        assert many > few
-
-    @pytest.mark.xfail(strict=True, reason="#10: one query per artist")
     def test_a_fixed_number_of_queries_whatever_the_size(self, db, make):
         rock = make.category()
         for n in range(3):
@@ -576,17 +609,15 @@ class TestAllPage:
         ((_, _, notes),) = categories_on(soup)["Rock"][0][1]
         assert notes == ["(Box Set)", "(Mono)", "(Picture Disc)"]
 
-    def test_the_page_dumps_the_data_into_a_comment_bug_10(self, admin, make, folder):
-        # #10: every Print View sends the whole collection twice, the second
-        # time in an HTML comment.
+    def test_the_page_does_not_dump_the_data_into_a_comment(self, admin, make, folder):
         rock = make.category("Rock")
         make.item(
             "Secret title", artists=[make.artist()], categories=[rock], folder=folder
         )
         html = admin.get("/printview/all").get_data(as_text=True)
-        comment = re.search(r"<!--(.*?)-->", html, re.S).group(1)
-        assert "Secret title" in comment
-        assert "Rock" in comment
+        assert "<!--" not in html
+        # Once, in the page itself.
+        assert html.count("Secret title") == 1
 
     def test_no_stylesheet_link_is_missing(self, admin):
         html = admin.get("/printview/all").get_data(as_text=True)
@@ -614,21 +645,6 @@ class TestFiledUnder:
             ("B", ["Split"]),
         ]
 
-    def test_an_item_with_only_ignored_artists_disappears_bug_10(
-        self, admin, make, folder
-    ):
-        # #10: an item is only listed under artists that aren't ignored.
-        rock = make.category()
-        make.item(
-            "Lost", artists=[make.artist(ignore=True)], categories=[rock], folder=folder
-        )
-        make.item(
-            "Found", artists=[make.artist("Other")], categories=[rock], folder=folder
-        )
-        soup = page(admin, "/printview/all")
-        assert titles(soup, "Rock") == ["Found"]
-
-    @pytest.mark.xfail(strict=True, reason="#10: items of ignored artists vanish")
     def test_an_item_with_only_ignored_artists_is_listed_under_one(
         self, admin, make, folder
     ):
@@ -639,16 +655,59 @@ class TestFiledUnder:
         soup = page(admin, "/printview/all")
         assert titles(soup, "Rock") == ["Lost"]
 
-    def test_an_item_whose_only_artist_is_ignored_leaves_no_category_block(
+    def test_an_item_with_only_ignored_artists_is_listed_under_its_filed_under_artist(
         self, admin, make, folder
     ):
         rock = make.category()
+        boss = make.artist("Boss")
         make.item(
-            "Lost", artists=[make.artist(ignore=True)], categories=[rock], folder=folder
+            "Lost",
+            artists=[make.artist("A", ignore=True), make.artist("B", ignore=True)],
+            categories=[rock],
+            folder=folder,
+            filed_under=boss,
         )
         soup = page(admin, "/printview/all")
-        # The category has artists, so it has a (blank) block and a contents entry.
-        assert categories_on(soup) == {"Rock": []}
+        # Under Boss, who isn't one of its artists, and with no note: it is
+        # already filed under Boss.
+        assert categories_on(soup)["Rock"] == [("Boss", [("2000", "Lost", [])])]
+
+    def test_an_item_with_only_ignored_artists_is_listed_under_the_first_by_name(
+        self, admin, make, folder
+    ):
+        rock = make.category()
+        b = make.artist("B", ignore=True)
+        a = make.artist("A", ignore=True)
+        make.item("Lost", artists=[b, a], categories=[rock], folder=folder)
+        soup = page(admin, "/printview/all")
+        assert [(n, [r[1] for r in rs]) for n, rs in categories_on(soup)["Rock"]] == [
+            ("A", ["Lost"])
+        ]
+
+    def test_an_item_with_one_artist_shown_is_not_listed_under_the_ignored_one(
+        self, admin, make, folder
+    ):
+        rock = make.category()
+        shown = make.artist("Shown")
+        ignored = make.artist("Ignored", ignore=True)
+        make.item(
+            "Both",
+            artists=[ignored, shown],
+            categories=[rock],
+            folder=folder,
+            filed_under=ignored,
+        )
+        soup = page(admin, "/printview/all")
+        assert [n for n, _ in categories_on(soup)["Rock"]] == ["Shown"]
+
+    def test_an_ignored_artist_is_left_out_of_crunch(self, make):
+        rock = make.category()
+        shown = make.artist("Shown")
+        make.item(
+            "Both", artists=[shown, make.artist("I", ignore=True)], categories=[rock]
+        )
+        _, artists, *_ = crunch()
+        assert artists[rock.id] == [shown]
 
     def test_filed_under_another_artist_adds_a_line(self, admin, make, folder):
         rock = make.category()
@@ -830,18 +889,27 @@ class TestSpecialSections:
         # No items, so no artists either: nothing at all.
         assert soup.select(".category-block") == []
 
-    def test_an_edison_item_without_a_slot_breaks_the_page_bug_10(
+    def test_an_edison_item_without_a_slot_is_listed_last_on_the_page(
         self, admin, make, folder
     ):
         edison = make.category("Edison Diamond Disc")
-        make.item(
+        a = make.artist()
+        for title, notes in [
+            ("Unslotted", "no idea"),
+            ("Nothing at all", None),
+            ("Bottom", "slot 2 Bottom drawer"),
+            ("Top", "slot 9 Top drawer"),
+        ]:
+            make.item(
+                title, artists=[a], categories=[edison], folder=folder, item_notes=notes
+            )
+        soup = page(admin, "/printview/all")
+        assert [i[1] for i in special_items(soup)] == [
+            "Top",
+            "Bottom",
             "Unslotted",
-            artists=[make.artist()],
-            categories=[edison],
-            folder=folder,
-            item_notes="no idea",
-        )
-        assert admin.get("/printview/all").status_code == 500
+            "Nothing at all",
+        ]
 
 
 class TestFolderPage:
@@ -939,3 +1007,100 @@ class TestAccess:
         # Pinned as it is today: PrintView's views have no @has_access.
         make.folder("Alphabetical")
         assert client.get(url).status_code == 200
+
+
+class TestQueries:
+    """The page makes a fixed number of queries, whatever the collection's size."""
+
+    @staticmethod
+    def grow(make, folder, start, stop):
+        cats = (
+            [make.category(f"Cat{n}") for n in range(start, stop)] if start < 2 else []
+        )
+        for n in range(start, stop):
+            rock = make.category(f"Cat-{n}-{start}")
+            a, b = make.artist(f"A{n}"), make.artist(f"B{n}", ignore=n % 2 == 0)
+            make.item(
+                f"I{n}",
+                artists=[a, b],
+                categories=[rock] + cats,
+                folder=folder,
+                filed_under=a if n % 3 == 0 else None,
+                master_id=None if n % 5 == 0 else 1000 + n,
+            )
+            make.item(
+                f"S{n}",
+                artists=[a],
+                categories=[make.category(f"Soundtracks{n}" if n else "Soundtracks")],
+                folder=folder,
+            )
+        db_session = make._save  # keep the rows committed
+        del db_session
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "/printview/all",
+            "/printview/folder/{folder}",
+            "/printview/category/{category}",
+            "/printview/decade/2000s",
+        ],
+    )
+    def test_a_page_makes_the_same_number_of_queries_for_a_larger_collection(
+        self, admin, db, make, folder, url
+    ):
+        soundtracks = make.category("Soundtracks")
+        showtunes = make.category("Showtunes")
+        edison = make.category("Edison Diamond Disc")
+        rock = make.category("Rock")
+        url = url.format(folder=folder.id, category=rock.id)
+
+        def add(n):
+            for c, notes in [
+                (rock, None),
+                (soundtracks, None),
+                (showtunes, None),
+                (edison, f"slot {n} Top drawer"),
+            ]:
+                item = make.item(
+                    f"{c.name} {n}",
+                    artists=[make.artist(f"A{n}"), make.artist(f"I{n}", ignore=True)],
+                    categories=list({c, rock}),
+                    folder=folder,
+                    filed_under=make.artist(f"F{n}"),
+                    item_notes=notes,
+                    master_id=None if n % 2 else 100 + n,
+                )
+                item.formats = [
+                    models.CollectionItemFormat(name="Box Set", descriptions=["Mono"])
+                ]
+            db.session.commit()
+
+        def queries():
+            return count_queries(db, lambda: admin.get(url))
+
+        for n in range(3):
+            add(n)
+        few = queries()
+        for n in range(3, 30):
+            add(n)
+        assert queries() == few
+        assert few < 20
+
+    def test_crunch_makes_the_same_number_of_queries_with_more_categories(
+        self, db, make, folder
+    ):
+        def add(n):
+            make.item(
+                f"I{n}",
+                artists=[make.artist(f"A{n}")],
+                categories=[make.category(f"C{n}")],
+                folder=folder,
+            )
+
+        for n in range(2):
+            add(n)
+        few = count_queries(db, crunch)
+        for n in range(2, 25):
+            add(n)
+        assert count_queries(db, crunch) == few
