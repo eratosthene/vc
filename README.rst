@@ -1,18 +1,9 @@
-Base Skeleton to start your application using Flask-AppBuilder and MongoEngine
-------------------------------------------------------------------------------
+vc
+==
 
-- Install it::
-
-	pip install flask-appbuilder
-	git clone https://github.com/dpgaspar/Flask-AppBuilder-Skeleton.git
-
-- Run it::
-
-	fabmanager run
-
-
-That's it!!
-
+A Flask-AppBuilder app over a Discogs collection: list and edit views, a Print
+View, and a Sync that pulls the collection and its notes from Discogs. It runs
+on Flask-AppBuilder 5, Flask 3 and SQLAlchemy 2, against MariaDB.
 
 Tests
 -----
@@ -21,10 +12,6 @@ Tests
 
 	pipenv install --dev
 	pipenv run pytest
-
-- Report coverage::
-
-	pipenv run pytest --cov=app --cov-report=term-missing
 
 
 Running with Docker
