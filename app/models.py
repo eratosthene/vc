@@ -76,11 +76,11 @@ class MediaCondition(Model):
     id = Column(Integer, primary_key=True)
     label = Column(String(100), nullable=False, unique=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.label
 
     def __repr__(self):
-        return self.label
+        return str(self)
 
 
 class SleeveCondition(Model):
@@ -89,11 +89,11 @@ class SleeveCondition(Model):
     id = Column(Integer, primary_key=True)
     label = Column(String(100), nullable=False, unique=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.label
 
     def __repr__(self):
-        return self.label
+        return str(self)
 
 
 class Artist(Model):
@@ -105,17 +105,14 @@ class Artist(Model):
     sort_name = Column(String(255))
     ignore = Column(Boolean, nullable=False, default=False, server_default=false())
 
-    def __unicode__(self):
+    def __str__(self):
         if self.sort_name:
             return self.sort_name
         else:
             return self.name
 
     def __repr__(self):
-        if self.sort_name:
-            return self.sort_name
-        else:
-            return self.name
+        return str(self)
 
 
 class Genre(Model):
@@ -124,11 +121,11 @@ class Genre(Model):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False, unique=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def __repr__(self):
-        return self.name
+        return str(self)
 
 
 class Style(Model):
@@ -137,11 +134,11 @@ class Style(Model):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False, unique=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def __repr__(self):
-        return self.name
+        return str(self)
 
 
 class Category(Model):
@@ -150,11 +147,11 @@ class Category(Model):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False, unique=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def __repr__(self):
-        return self.name
+        return str(self)
 
 
 class Folder(Model):
@@ -167,11 +164,11 @@ class Folder(Model):
     # page, and in its random LP links.
     counts_as_lp = Column(Boolean, nullable=False, default=True, server_default=true())
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def __repr__(self):
-        return self.name
+        return str(self)
 
 
 class CollectionItemFormat(Model):
@@ -186,7 +183,7 @@ class CollectionItemFormat(Model):
     text = Column(String(255))
     descriptions = Column(JSON)
 
-    def __unicode__(self):
+    def __str__(self):
         ret = ""
         if self.qty:
             ret = ret + str(self.qty) + "x "
@@ -200,7 +197,7 @@ class CollectionItemFormat(Model):
         return ret
 
     def __repr__(self):
-        return self.__unicode__()
+        return str(self)
 
 
 class CollectionItem(Model):
@@ -237,11 +234,11 @@ class CollectionItem(Model):
         cascade="all, delete-orphan",
     )
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title
 
     def __repr__(self):
-        return self.title
+        return str(self)
 
     def release_show(self):
         return Markup(
