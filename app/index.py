@@ -3,6 +3,7 @@ from flask_appbuilder import IndexView
 from flask_appbuilder.security.decorators import has_access
 from flask_appbuilder.views import expose
 from app import db, syncjob as sync_jobs
+from app.counts import collection_counts
 from flask import abort, redirect, current_app, jsonify, request, url_for
 from flask_wtf.csrf import validate_csrf
 from sqlalchemy import and_, func
@@ -153,41 +154,9 @@ class MyIndexView(IndexView):
 
     @expose("/")
     def index(self):
-        from app.models import CollectionItem, Folder, Category
-
         self.update_redirect()
-        lp_total = 0
-        full_total = db.session.query(CollectionItem).count()
-        by_folder = []
-        by_category = []
-        by_decade = []
-        for f in db.session.query(Folder).order_by(Folder.name):
-            c = db.session.query(CollectionItem).filter_by(folder_id=f.id).count()
-            by_folder.append({"folder": f, "total": c})
-            if f.counts_as_lp:
-                lp_total += c
-        for f in db.session.query(Category).order_by(Category.name):
-            c = (
-                db.session.query(CollectionItem)
-                .filter(CollectionItem.categories.any(Category.id == f.id))
-                .count()
-            )
-            by_category.append({"category": f, "total": c})
-        decade = func.floor(CollectionItem.master_year / 10) * 10
-        dc = (
-            db.session.query(decade, func.count())
-            .filter(CollectionItem.master_year > 0)
-            .group_by(decade)
-            .order_by(decade)
-        )
-        for d, count in dc:
-            by_decade.append({"decade": str(int(d)) + "s", "count": count})
         return self.render_template(
             self.index_template,
             appbuilder=self.appbuilder,
-            lp_total=lp_total,
-            full_total=full_total,
-            by_folder=by_folder,
-            by_category=by_category,
-            by_decade=by_decade,
+            **collection_counts(),
         )
