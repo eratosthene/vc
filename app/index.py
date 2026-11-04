@@ -1,10 +1,12 @@
 import logging
 from flask_appbuilder import IndexView
+from flask_appbuilder.security.decorators import has_access
 from flask_appbuilder.views import expose
-from app import db
-from flask import abort, redirect, current_app, request
+from app import db, syncjob as sync_jobs
+from flask import abort, redirect, current_app, jsonify, request, url_for
+from flask_wtf.csrf import validate_csrf
 from sqlalchemy import and_, func
-import discogs_client
+from wtforms import ValidationError
 
 # The models are imported inside the functions that use them, not here: this
 # module is imported before Flask-AppBuilder is set up, and importing a model
@@ -14,118 +16,15 @@ import discogs_client
 logger = logging.getLogger()
 
 
-def get_or_add(model, **kwargs):
-    """The row of `model` matching `kwargs`, added to the session if it's new."""
-    row = db.session.query(model).filter_by(**kwargs).one_or_none()
-    if row is None:
-        row = model(**kwargs)
-        db.session.add(row)
-        db.session.flush()
-        logger.info("Adding " + model.__name__.lower() + " " + str(row))
-    return row
-
-
-def parse_notes(item):
-    """Media and sleeve condition, notes, Listened and Includes from an item's
-    Discogs notes, as a dict of CollectionItem fields."""
-    from app.models import MediaCondition, SleeveCondition
-
-    mc = None
-    sc = None
-    n = None
-    listened = None
-    i = None
-    for note in item.notes:
-        if note["field_id"] == 1:
-            mc = get_or_add(MediaCondition, label=note["value"].rstrip())
-        if note["field_id"] == 2:
-            sc = get_or_add(SleeveCondition, label=note["value"].rstrip())
-        if note["field_id"] == 3:
-            n = note["value"].rstrip()
-        if note["field_id"] == 4:
-            if note["value"].rstrip() == "Yes":
-                listened = True
-            else:
-                listened = False
-        if note["field_id"] == 5:
-            i = note["value"].rstrip()
-    return {
-        "media_condition": mc,
-        "sleeve_condition": sc,
-        "item_notes": n,
-        "listened": listened,
-        "includes": i,
-    }
-
-
-def add_discogs_release(item):
-    from app.models import (
-        CollectionItem,
-        CollectionItemFormat,
-        Folder,
-        Artist,
-        Genre,
-        Style,
-    )
-
-    folder = db.session.query(Folder).filter_by(discogs_id=item.folder_id).one()
-    artists = []
-    genres = []
-    styles = []
-    for artist in item.release.artists:
-        adoc = db.session.query(Artist).filter_by(discogs_id=artist.id).one_or_none()
-        if adoc is None:
-            sn = ""
-            n = artist.name
-            if n.startswith("The "):
-                sn = n.removeprefix("The ") + ", The"
-                logger.debug("Replacing /" + n + "/ with /" + sn + "/")
-            adoc = Artist(discogs_id=artist.id, name=artist.name, sort_name=sn)
-            db.session.add(adoc)
-            db.session.flush()
-            logger.info("Adding artist " + str(adoc))
-        artists.append(adoc)
-    for genre in item.release.genres:
-        genres.append(get_or_add(Genre, name=genre))
-    for style in item.release.styles:
-        styles.append(get_or_add(Style, name=style))
-    notes = parse_notes(item)
-    master_id = None
-    master_year = item.release.year
-    if item.release.master:
-        master_id = item.release.master.id
-        master_year = item.release.master.year
-    collection_item = (
-        db.session.query(CollectionItem)
-        .filter_by(instance_id=item.instance_id)
-        .one_or_none()
-    )
-    if collection_item is None:
-        collection_item = CollectionItem(instance_id=item.instance_id)
-        db.session.add(collection_item)
-    collection_item.release_id = item.release.id
-    collection_item.title = item.release.title
-    collection_item.year = item.release.year
-    collection_item.genres = genres
-    collection_item.styles = styles
-    collection_item.master_id = master_id
-    collection_item.master_year = master_year
-    collection_item.formats = [
-        CollectionItemFormat(
-            name=f["name"],
-            qty=int(f["qty"]) if f.get("qty") else None,
-            text=f.get("text"),
-            descriptions=f.get("descriptions", []),
-        )
-        for f in item.release.formats
-    ]
-    collection_item.released = item.release.fetch("released")
-    collection_item.folder = folder
-    for field, value in notes.items():
-        setattr(collection_item, field, value)
-    collection_item.artists = artists
-    db.session.commit()
-    logger.debug(collection_item)
+def check_csrf():
+    """Refuse a POST that doesn't carry the session's CSRF token (400). Like
+    Flask-WTF's forms, it does nothing if WTF_CSRF_ENABLED is False."""
+    if not current_app.config.get("WTF_CSRF_ENABLED", True):
+        return
+    try:
+        validate_csrf(request.form.get("csrf_token"))
+    except ValidationError:
+        abort(400, "The CSRF token is missing or invalid.")
 
 
 def redirect_to_random(
@@ -212,74 +111,45 @@ class MyIndexView(IndexView):
         self.update_redirect()
         return redirect_to_random(decade=decade)
 
-    @expose("/syncdiscogs")
+    @expose("/syncdiscogs", methods=["POST"])
+    @has_access
     def syncdiscogs(self):
-        from app.models import CollectionItem
-
-        self.update_redirect()
-        logger.info("Updating discogs...")
-        d = discogs_client.Client(
-            current_app.config["DISCOGS_SETTINGS"]["USER_AGENT"],
-            user_token=current_app.config["DISCOGS_SETTINGS"]["USER_TOKEN"],
+        """Start the Discogs sync in the background (a POST, so a link preview
+        or a crawler can't start one) and go to the page that shows it."""
+        check_csrf()
+        job_id = sync_jobs.start(
+            current_app._get_current_object(),
+            dry_run=request.form.get("dry_run") == "1",
         )
-        me = d.identity()
-        releases = me.collection_folders[0].releases
-        local_releases = db.session.query(CollectionItem).all()
-        logger.info("Total releases: " + str(len(releases)))
-        logger.info("Total local releases: " + str(len(local_releases)))
-        for item in releases:
-            logger.debug("Checking discogs: " + str(item))
-            if (
-                not db.session.query(CollectionItem)
-                .filter_by(instance_id=item.instance_id)
-                .count()
-            ):
-                logger.info("Adding " + str(item))
-                add_discogs_release(item)
+        return redirect(url_for("MyIndexView.syncjob", job_id=job_id), code=303)
 
-        for item in local_releases:
-            logger.debug("Checking local: " + str(item))
-            if not any(x.instance_id == item.instance_id for x in releases):
-                logger.info("Removing " + str(item))
-                db.session.delete(item)
-                db.session.commit()
-
-        ref = request.referrer
-        if ref:
-            return redirect(ref)
-        else:
-            return redirect("/collectionmodelview/list/")
-
-    @expose("/syncdiscogsnotes")
-    def syncdiscogsnotes(self):
-        from app.models import CollectionItem
-
+    @expose("/syncjob/<job_id>")
+    @has_access
+    def syncjob(self, job_id):
+        """The page that shows a sync's progress."""
         self.update_redirect()
-        logger.info("Updating discogs notes...")
-        d = discogs_client.Client(
-            current_app.config["DISCOGS_SETTINGS"]["USER_AGENT"],
-            user_token=current_app.config["DISCOGS_SETTINGS"]["USER_TOKEN"],
+        job = sync_jobs.read(current_app._get_current_object(), job_id)
+        if job is None:
+            abort(404)
+        return self.render_template(
+            "syncjob.html",
+            appbuilder=self.appbuilder,
+            job_id=job_id,
+            status_url=url_for("MyIndexView.syncjobstatus", job_id=job_id),
         )
-        me = d.identity()
-        releases = me.collection_folders[0].releases
-        logger.info("Total releases: " + str(len(releases)))
-        for item in releases:
-            logger.info("Updating notes for " + str(item))
-            notes = parse_notes(item)
-            collection_item = (
-                db.session.query(CollectionItem)
-                .filter_by(instance_id=item.instance_id)
-                .one()
-            )
-            for field, value in notes.items():
-                setattr(collection_item, field, value)
-            db.session.commit()
 
-        ref = request.referrer
-        if ref:
-            return redirect(ref)
-        else:
-            return redirect("/collectionmodelview/list/")
+    @expose("/syncjobstatus/<job_id>")
+    @has_access
+    def syncjobstatus(self, job_id):
+        """A sync's state and the part of its log after `offset`, as JSON."""
+        job = sync_jobs.read(
+            current_app._get_current_object(),
+            job_id,
+            request.args.get("offset", 0, type=int),
+        )
+        if job is None:
+            return jsonify(error="No such sync."), 404
+        return jsonify(job)
 
     @expose("/")
     def index(self):

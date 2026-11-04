@@ -5,6 +5,7 @@ from flask import Flask
 from flask_appbuilder import AppBuilder, Model
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate, stamp, upgrade
+from flask_wtf.csrf import generate_csrf
 
 """
  Logging configuration
@@ -19,6 +20,11 @@ app.config.from_object("config")
 # its metadata (ours and the ab_* tables) on db.
 db = SQLAlchemy(app, model_class=Model)
 migrate = Migrate(app, db)
+# For the token in the Sync button's form (see check_csrf in app/index.py).
+# Flask-AppBuilder doesn't turn on CSRFProtect, which would also change how
+# its own views treat GETs (it refuses a delete by GET), so the sync checks its
+# own POST.
+app.jinja_env.globals["csrf_token_for_forms"] = generate_csrf
 # The views import `db`, so they can only be imported once it exists.
 from app.index import MyIndexView  # noqa: E402
 

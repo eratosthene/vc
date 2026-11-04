@@ -1,0 +1,42 @@
+{% extends "appbuilder/base.html" %}
+{% block content %}
+<div class="container">
+  <h1 id="sync-title">Discogs sync</h1>
+  <p id="sync-status">Running…</p>
+  <pre id="sync-log" style="max-height: 30em; overflow: auto"></pre>
+  <p id="sync-done" style="display: none">
+    <a href="{{ url_for('CollectionModelView.list') }}" class="btn btn-primary">Back to the collection</a>
+  </p>
+</div>
+{% endblock %}
+{% block tail %}
+{{ super() }}
+<script {% if csp_nonce is defined %}nonce="{{ csp_nonce() }}"{% endif %}>
+  (function () {
+    var statusUrl = {{ status_url|tojson }};
+    var offset = 0;
+    var log = document.getElementById("sync-log");
+    function show(text) { document.getElementById("sync-status").textContent = text; }
+    function poll() {
+      fetch(statusUrl + "?offset=" + offset, {credentials: "same-origin"})
+        .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); })
+        .then(function (job) {
+          document.getElementById("sync-title").textContent = job.title;
+          if (job.log) {
+            log.textContent += job.log;
+            log.scrollTop = log.scrollHeight;
+          }
+          offset = job.offset;
+          if (job.status === "running") {
+            setTimeout(poll, 1500);
+            return;
+          }
+          show(job.status === "done" && !job.errors ? "Finished." : "Failed: see the log above.");
+          document.getElementById("sync-done").style.display = "";
+        })
+        .catch(function () { show("Lost contact with the server; retrying…"); setTimeout(poll, 5000); });
+    }
+    poll();
+  })();
+</script>
+{% endblock %}
