@@ -38,9 +38,9 @@ AUTH_TYPE = AUTH_DB
 BABEL_DEFAULT_LOCALE = "en"
 
 # How much the app logs: DEBUG, INFO, WARNING, ERROR or CRITICAL. INFO is the
-# default. DEBUG adds Flask-AppBuilder's and SQLAlchemy's chatter and the sync's
-# row-by-row detail. The sync's own log, shown on its progress page, always
-# keeps INFO.
+# default. DEBUG adds more from the libraries, and the sync's detail on each
+# genre, style and condition it adds. The sync's own log, shown on its progress
+# page, always keeps INFO.
 LOG_LEVEL = "INFO"
 
 # Theme configuration
