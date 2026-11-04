@@ -7,14 +7,6 @@
 {% block navbar %}
 {% endblock %}
 {% block content %}
-<!--
-{{ categories }} 
-{{ artists }}
-{{ items }}
-{{ soundtrack_items }}
-{{ showtunes_items }}
-{{ edison_items }}
--->
 {% if categories|length > 1 %}
       <div class="contents">
         <h1>{{ pagetitle }}</h1>
@@ -28,7 +20,7 @@
       </div>
 {% endif %}
 {% for c in categories %}
-  {% if c.name == 'Soundtracks' and soundtrack_items|length > 0 %}
+  {% if c.name == SOUNDTRACKS and soundtrack_items|length > 0 %}
       <div class="category-block">
         <div id="{{ c.id }}" class="category-header">{{ c.name }}</div>
         <div class="artist-columns">
@@ -52,7 +44,7 @@
             <div class="soundtrack-artist-block">
               {{ i.artists|join(', ',attribute='name') }}
             </div>
-      {% if i.folder.name != 'Soundtracks' %}
+      {% if i.folder.name != SOUNDTRACKS %}
             <div class="release-filed-block">
               <span class="release-filed-info">(filed under {{ i.folder }})</span>
             </div>
@@ -66,7 +58,7 @@
     {% endfor %}
         </div>
       </div>
-  {% elif c.name == 'Showtunes' and showtunes_items|length > 0 %}
+  {% elif c.name == SHOWTUNES and showtunes_items|length > 0 %}
       <div class="category-block">
         <div id="{{ c.id }}" class="category-header">{{ c.name }}</div>
         <div class="artist-columns">
@@ -102,7 +94,7 @@
     {% endfor %}
         </div>
       </div>
-  {% elif c.name == 'Edison Diamond Disc' and edison_items|length > 0 %}
+  {% elif c.name == EDISON and edison_items|length > 0 %}
       <div class="category-block">
         <div id="{{ c.id }}" class="category-header">{{ c.name }}</div>
         <div class="artist-columns">
@@ -129,7 +121,6 @@
         <div id="{{ c.id }}" class="category-header">{{ c.name }}</div>
         <div class="artist-columns">
       {% for a in artists[c.id] %}
-        {% if not a.ignore %}
             <div class="artist-block">
               <div class="artist-header">{{ a.name }}</div>
               <div class="release-block">
@@ -150,9 +141,9 @@
             {% if i.master_year != i.year %}
                   <span class="formats">[{{ i.year|string+' pressing' if i.year else 'no press date' }}]</span>
             {% endif %}
-            {% if ( c.name == "Christmas" or c.name == "Halloween" or
-                    c.name == "Soundtracks" or a.sort_name == "Various Artists" or
-                    i.folder.name != "Alphabetical")
+            {% if ( c.name in FOLDER_NOTE_CATEGORIES or
+                    a.sort_name == "Various Artists" or
+                    i.folder.name != ALPHABETICAL)
             %}
                   <div class="release-filed-block">
                     <span class="release-filed-info">(filed under {{ i.folder }})</span>
@@ -167,7 +158,6 @@
           {% endfor %}
               </div>
             </div>
-        {% endif %}
       {% endfor %}
         </div>
       </div>
