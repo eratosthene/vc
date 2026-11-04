@@ -1,0 +1,80 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pipenv
+
+      - name: Install Pipenv
+        run: python -m pip install pipenv
+
+      # --deploy fails the job if Pipfile.lock is out of date with the Pipfile.
+      - name: Install dependencies from Pipfile.lock
+        run: pipenv install --dev --deploy
+
+      # One line per test, in colour and unbuffered, so the step's log can be
+      # watched live while it runs.
+      - name: Run tests
+        run: pipenv run pytest -v --color=yes --junitxml=test-results/junit.xml
+        env:
+          PYTHONUNBUFFERED: "1"
+
+      # Adds the results to this job's summary. Dependabot PRs and PRs from
+      # forks get a read-only token, so the results only show in the job log
+      # for those.
+      - name: Publish test results
+        if: >-
+          !cancelled() && (
+            github.event_name != 'pull_request' || (
+              github.event.pull_request.head.repo.full_name == github.repository &&
+              github.event.pull_request.user.login != 'dependabot[bot]'
+            )
+          )
+        uses: EnricoMi/publish-unit-test-result-action@d0a4676d0e0b938bc201470d88276b7c74c712b3 # v2.24.0
+        with:
+          files: test-results/junit.xml
+          # A check run made with the workflow's token gets filed under
+          # whichever workflow run GitHub picks (it showed up under Docker
+          # build), where it has no logs to show. The pytest job's own status
+          # already passes or fails the PR.
+          check_run: false
+          # A new comment emails everyone on the PR, so the next step puts the
+          # results in the PR description instead.
+          comment_mode: "off"
+
+      - name: Add the results to the PR description
+        if: >-
+          !cancelled() &&
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.login != 'dependabot[bot]'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const sha = context.payload.pull_request.head.sha.slice(0, 7);
+            const testResults = require("./.github/scripts/test-results.js");
+            const body = testResults("test-results/junit.xml", `Commit ${sha} · [workflow run](${runUrl})`);
+            const prSection = require("./.github/scripts/pr-section.js");
+            await prSection({ github, context, core }, "vc-test-results", body);

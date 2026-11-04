@@ -1,0 +1,109 @@
+name: Migrations
+
+# Runs the migrations against MariaDB 10.11, as on the live server and in
+# docker/compose.dev.yml, when a PR adds one, and checks the database they
+# produce matches the models. New databases are built from the models by
+# `flask setup-db` rather than by the migrations, so this is what catches a
+# migration and a model change that don't agree.
+on:
+  pull_request:
+    paths:
+      - migrations/**
+      - app/models.py
+      - .github/workflows/migrations.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+
+      # The checkout is GitHub's merge of the PR into its base, so HEAD^1 is
+      # the base. Also runs when a model or this workflow changes, so changes
+      # to either get tested.
+      - name: Look for new migrations
+        id: check
+        run: |
+          added=$(git diff --name-only --diff-filter=A HEAD^1 HEAD -- migrations/versions)
+          check=$(git diff --name-only HEAD^1 HEAD -- .github/workflows/migrations.yml app/models.py)
+          if [ -n "$added$check" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            printf 'Testing migrations for:\n%s\n%s\n' "$added" "$check" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "No new migrations, so the migrations weren't run." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  migrations:
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: vc
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      FLASK_APP: app
+      MYSQL: mysql -h 127.0.0.1 -uroot -proot
+      # The live database's character set (config.py.tpl asks for utf8mb4).
+      CHARSET: CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pipenv
+
+      - name: Install dependencies from Pipfile.lock
+        run: |
+          python -m pip install pipenv
+          pipenv install --dev --deploy
+
+      # config.py holds real credentials and isn't committed, so use the
+      # template with its database URL pointed at the MariaDB service.
+      - name: Use config.py.tpl as config.py
+        run: |
+          cp config.py.tpl config.py
+          echo 'SQLALCHEMY_DATABASE_URI = "mysql+pymysql://root:root@127.0.0.1/vc?charset=utf8mb4"' >> config.py
+
+      - name: Set up a new database
+        run: |
+          $MYSQL -e "ALTER DATABASE vc $CHARSET"
+          pipenv run flask setup-db
+          pipenv run flask db current | grep -q "(head)"
+          pipenv run flask db check
+
+      # setup-db builds a new database from the models, so also run the
+      # migrations themselves, from nothing to head and back.
+      - name: Run the migrations from an empty database
+        run: |
+          $MYSQL -e "DROP DATABASE vc; CREATE DATABASE vc $CHARSET"
+          pipenv run flask db upgrade
+          pipenv run flask db check
+
+      - name: Downgrade to the start and upgrade again
+        run: |
+          pipenv run flask db downgrade base
+          pipenv run flask db upgrade
+          pipenv run flask db check
