@@ -18,11 +18,15 @@ updates:
       python-minor-and-patch:
         update-types: [minor, patch]
 
-  # The base image in docker/Dockerfile.
+  # The base image in docker/Dockerfile. The Python version is chosen by hand
+  # (the tag is `3.12-alpine`, so a new Python release looks like a minor
+  # update), and `docker build --pull` already picks up its patch releases.
   - package-ecosystem: docker
     directory: /docker
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: python
     groups:
       docker-minor-and-patch:
         update-types: [minor, patch]
