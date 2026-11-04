@@ -4,8 +4,8 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [packages]
-# 4.x for now: Flask 3, SQLAlchemy 2 and FAB 5 come in a later step of #6.
-flask-appbuilder = "~=4.8.1"
+# Flask 3 and SQLAlchemy 2 come with it, so they are not listed.
+flask-appbuilder = "5.3.0"
 python3-discogs-client = "~=2.7"
 pymysql = "~=1.1"
 flask-migrate = "~=4.1"
