@@ -46,6 +46,24 @@ def setup_db():
         click.echo("Created a new database at the latest migration.")
 
 
+@app.cli.command("sync-discogs")
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Show what would be added, changed and removed, and save nothing.",
+)
+def sync_discogs(dry_run):
+    """Sync the collection from Discogs: folders, then items added or updated
+    (notes included), then the items that are gone from Discogs. The log ends
+    with a summary."""
+    from app import sync
+
+    try:
+        sync.run(app, dry_run=dry_run)
+    except sync.SyncAlreadyRunning as e:
+        raise click.ClickException(str(e))
+
+
 # The views import `appbuilder`, so they can only be imported once it exists.
 with app.app_context():
     from app import views  # noqa: E402, F401
