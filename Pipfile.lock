@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "2c768b635b19be008a77a25d7e707c96b146b83b9966902cf8963af2df352805"
+            "sha256": "ece33faca177da9267f6f176be33bc5aa2d0fae4c618490a9632804dab6899b8"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -296,12 +296,12 @@
         },
         "flask-appbuilder": {
             "hashes": [
-                "sha256:4f43b603cfdc476b2c08b42d4cf9f083f8abaaa4a38661893d381f7390c05d54",
-                "sha256:d3df5b3456c7075329067b81a6b7176883c3870152c4fb72aeb19929633ad286"
+                "sha256:18d28b483a34fe292cf6f96c142ef0bbbd09dd78a047d678bc9afc8547f74de4",
+                "sha256:ae6d3ed49b105d9e837ee37402dc7810e3532ff794dd240e5028676ce57a4947"
             ],
             "index": "pypi",
             "markers": "python_version ~= '3.7'",
-            "version": "==4.5.5"
+            "version": "==4.8.1"
         },
         "flask-babel": {
             "hashes": [
@@ -591,19 +591,19 @@
         },
         "marshmallow": {
             "hashes": [
-                "sha256:013fa8a3c4c276c24d26d84ce934dc964e2aa794345a0f8c7e5a7191482c8a73",
-                "sha256:bbe2adb5a03e6e3571b573f42527c6fe926e17467833660bebd11593ab8dfd57"
+                "sha256:03a882ff2eabb9a4e24b433c2949f359ef4d172a12fdc14cde10375fd55328b4",
+                "sha256:9e6ffa8511012ca89732324c1c253efd7b4d35632dcbdf80aa793fe01804af3e"
             ],
-            "markers": "python_version >= '3.9'",
-            "version": "==3.26.2"
+            "markers": "python_version >= '3.11'",
+            "version": "==4.4.0"
         },
         "marshmallow-sqlalchemy": {
             "hashes": [
-                "sha256:2ab0f1280c793e5aec81deab3e63ec23688ddfe05e5f38ac960368a1079520a1",
-                "sha256:c31b3bdf794de1d78c53e1c495502cbb3eeb06ed216869980c71d6159e7e9e66"
+                "sha256:09ce8cddb9f8f2cf415261ea939542527f722943488b70a5ad69106486d259ea",
+                "sha256:adebc7e36a7ec5662de93b00b850b50e36f4e8fe67ccf6e9e8e5ff42a78b1696"
             ],
-            "markers": "python_version >= '3.7'",
-            "version": "==0.28.2"
+            "markers": "python_version >= '3.10'",
+            "version": "==1.6.0"
         },
         "mdurl": {
             "hashes": [
