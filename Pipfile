@@ -5,7 +5,7 @@ verify_ssl = true
 
 [packages]
 # 4.5.x for now: Flask 3, SQLAlchemy 2 and FAB 5 come in a later step of #6.
-flask-appbuilder = "~=4.5.2"
+flask-appbuilder = "~=4.8.1"
 python3-discogs-client = "~=2.7"
 pymysql = "~=1.1"
 flask-migrate = "~=4.1"
