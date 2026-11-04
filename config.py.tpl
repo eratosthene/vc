@@ -33,11 +33,15 @@ APP_NAME = "vc"
 # in the database.
 AUTH_TYPE = AUTH_DB
 
-# ---------------------------------------------------
-# Babel config for translations
-# ---------------------------------------------------
-# Setup default language
+# The language of Flask-AppBuilder's own pages (login, menus). vc has no
+# translations of its own.
 BABEL_DEFAULT_LOCALE = "en"
+
+# How much the app logs: DEBUG, INFO, WARNING, ERROR or CRITICAL. INFO is the
+# default. DEBUG adds Flask-AppBuilder's and SQLAlchemy's chatter and the sync's
+# row-by-row detail. The sync's own log, shown on its progress page, always
+# keeps INFO.
+LOG_LEVEL = "INFO"
 
 # Theme configuration
 # these are located on static/appbuilder/css/themes

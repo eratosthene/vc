@@ -1,12 +1,11 @@
+# Python
+__pycache__/
 *.pyc
-app.db
-./tmp
-./build/*
-./.idea
-./.idea/*
-env
-venv
-*.sublime*
+.venv
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov
 
 # Local app config (holds the secret key and Discogs token); copy from config.py.tpl
 config.py
@@ -15,6 +14,3 @@ vc.cfg
 # Secrets for docker; never commit them
 docker/.env
 .env
-.coverage
-htmlcov
-.pytest_cache
