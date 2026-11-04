@@ -8,17 +8,17 @@ from app import models
 class TestStringForms:
     def test_artist_shows_its_name_without_a_sort_name(self):
         a = models.Artist(name="The Beatles")
-        assert str(a.__unicode__()) == "The Beatles"
+        assert str(a) == "The Beatles"
         assert repr(a) == "The Beatles"
 
     @pytest.mark.parametrize("sort_name", [None, ""])
     def test_artist_with_an_empty_sort_name_shows_its_name(self, sort_name):
         a = models.Artist(name="Prince", sort_name=sort_name)
-        assert a.__unicode__() == "Prince"
+        assert str(a) == "Prince"
 
     def test_artist_shows_its_sort_name_when_it_has_one(self):
         a = models.Artist(name="The Beatles", sort_name="Beatles, The")
-        assert a.__unicode__() == "Beatles, The"
+        assert str(a) == "Beatles, The"
         assert repr(a) == "Beatles, The"
 
     @pytest.mark.parametrize(
@@ -34,12 +34,12 @@ class TestStringForms:
     )
     def test_simple_models_show_their_label_or_name(self, model, field):
         row = model(**{field: "Thing"})
-        assert row.__unicode__() == "Thing"
+        assert str(row) == "Thing"
         assert repr(row) == "Thing"
 
     def test_collection_item_shows_its_title(self):
         item = models.CollectionItem(title="Abbey Road")
-        assert item.__unicode__() == "Abbey Road"
+        assert str(item) == "Abbey Road"
         assert repr(item) == "Abbey Road"
 
     @pytest.mark.parametrize(
@@ -59,8 +59,17 @@ class TestStringForms:
     )
     def test_format_string_form(self, fields, expected):
         f = models.CollectionItemFormat(**fields)
-        assert f.__unicode__() == expected
+        assert str(f) == expected
         assert repr(f) == expected
+
+
+def test_no_model_has_a_python_2_unicode_method():
+    # Python 3 never calls __unicode__; __str__ is what the views use.
+    from flask_appbuilder import Model
+
+    for cls in Model.registry._class_registry.values():
+        if isinstance(cls, type) and cls.__module__ == "app.models":
+            assert not hasattr(cls, "__unicode__"), cls
 
 
 class TestLinks:

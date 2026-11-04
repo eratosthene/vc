@@ -7,15 +7,26 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate, stamp, upgrade
 from flask_wtf.csrf import generate_csrf
 
-"""
- Logging configuration
-"""
-
-logging.basicConfig(format="%(asctime)s:%(levelname)s:%(name)s:%(message)s")
-logging.getLogger().setLevel(logging.INFO)
-
 app = Flask(__name__)
 app.config.from_object("config")
+
+
+def configure_logging(app):
+    """Set the root log level from the LOG_LEVEL setting (default INFO)."""
+    name = str(app.config.get("LOG_LEVEL", "INFO")).upper()
+    level = logging.getLevelName(name)
+    if not isinstance(level, int):
+        raise ValueError(
+            f"LOG_LEVEL is {name!r}; use DEBUG, INFO, WARNING, ERROR or CRITICAL."
+        )
+    logging.basicConfig(format="%(asctime)s:%(levelname)s:%(name)s:%(message)s")
+    logging.getLogger().setLevel(level)
+    # The sync's log is what its progress page shows, so it keeps INFO even
+    # when the rest of the app is turned down.
+    logging.getLogger("vc.sync").setLevel(min(level, logging.INFO))
+
+
+configure_logging(app)
 # Flask-AppBuilder's Model is the models' base class, so passing it here puts
 # its metadata (ours and the ab_* tables) on db.
 db = SQLAlchemy(app, model_class=Model)

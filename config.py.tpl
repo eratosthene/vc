@@ -33,11 +33,15 @@ APP_NAME = "vc"
 # in the database.
 AUTH_TYPE = AUTH_DB
 
-# ---------------------------------------------------
-# Babel config for translations
-# ---------------------------------------------------
-# Setup default language
+# The language of Flask-AppBuilder's own pages (login, menus). vc has no
+# translations of its own.
 BABEL_DEFAULT_LOCALE = "en"
+
+# How much the app logs: DEBUG, INFO, WARNING, ERROR or CRITICAL. INFO is the
+# default. DEBUG adds more from the libraries, and the sync's detail on each
+# genre, style and condition it adds. The sync's own log, shown on its progress
+# page, always keeps INFO.
+LOG_LEVEL = "INFO"
 
 # Theme configuration
 # these are located on static/appbuilder/css/themes
@@ -51,3 +55,8 @@ DISCOGS_SETTINGS = {
     "USER_TOKEN": "",
     "USER_AGENT": "discogs_exporter/1.0",
 }
+
+# Where the Discogs sync keeps its lock and its background jobs' state and log
+# files. The default is a "vc-sync-jobs" folder in the system's temp folder.
+# Every gunicorn worker has to see the same folder.
+# SYNC_JOB_FOLDER = "/tmp/vc-sync-jobs"
