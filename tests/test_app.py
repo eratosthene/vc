@@ -56,7 +56,6 @@ def test_the_routes_of_the_index_view(app):
     assert {
         "/",
         "/syncdiscogs",
-        "/syncdiscogsnotes",
         "/random_lp",
         "/unlistened_lp",
         "/random_release",

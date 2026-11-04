@@ -88,9 +88,13 @@ class TestLists:
 
     def test_the_collection_list_has_the_sync_buttons(self, admin, data):
         soup = get(admin, "/collectionmodelview/list/")
-        buttons = {a.get_text(strip=True): a["href"] for a in soup.select("a.btn")}
-        assert buttons["Sync"] == "/syncdiscogs"
-        assert buttons["Sync Notes"] == "/syncdiscogsnotes"
+        # The sync is a POST, so the buttons are in a form, not links.
+        (form,) = soup.select("form[action='/syncdiscogs']")
+        assert form["method"] == "post"
+        assert form.select_one("input[name=csrf_token]")["value"]
+        buttons = {b.get_text(strip=True): b.get("name") for b in form.select("button")}
+        assert buttons == {"Sync": None, "Dry run": "dry_run"}
+        assert "Sync Notes" not in str(soup)
 
     def test_the_categorize_list_has_no_sync_buttons(self, admin, data):
         soup = get(admin, "/collectionitemmodelview/list/")

@@ -2,5 +2,9 @@
 
 {% block list_header %}
    {{ super() }}
-   <a href="/syncdiscogs" class="btn btn-sm btn-primary">Sync</a>&nbsp;<a href="/syncdiscogsnotes" class="btn btn-sm btn-primary">Sync Notes</a>
+   <form action="{{ url_for('MyIndexView.syncdiscogs') }}" method="post" style="display: inline">
+     <input type="hidden" name="csrf_token" value="{{ csrf_token_for_forms() }}"/>
+     <button type="submit" class="btn btn-sm btn-primary" title="Add, update and remove items to match Discogs">Sync</button>
+     <button type="submit" name="dry_run" value="1" class="btn btn-sm btn-default" title="Show what a sync would change, without saving anything">Dry run</button>
+   </form>
 {% endblock %}
