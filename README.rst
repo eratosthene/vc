@@ -31,8 +31,9 @@ items and updates the ones that changed on Discogs (notes included), then
 removes the items that are gone, listing them in the summary at the end of the
 log. It never touches what's only kept in vc: categories, Filed Under, an
 artist's sort name and Ignore, and a folder's Counts As LP. A new artist's
-sort name drops the number Discogs adds ("Prince (2)" shows as "Prince") and
-moves a leading "The"; an existing artist is never renamed. Only one sync runs
+name drops the number Discogs adds ("Prince (2)" becomes "Prince"), and its sort
+name moves a leading "The" ("The Beatles" sorts as "Beatles, The"); an existing
+artist is never renamed. Only one sync runs
 at a time. A job's state and log are files in ``SYNC_JOB_FOLDER`` (default:
 ``vc-sync-jobs`` in the system's temp folder), as several gunicorn workers
 don't share memory.

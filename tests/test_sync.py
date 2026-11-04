@@ -182,17 +182,33 @@ class TestSortNames:
             ("Thelonious Monk", ""),
             ("the Pogues", ""),
             ("Various", ""),
-            ("Prince (2)", "Prince"),
+            ("Prince (2)", ""),
             ("The Band (3)", "Band, The"),
-            ("Kate Bush (12)", "Kate Bush"),
-            ("Blink (182)x", ""),
-            ("Mr. (Not) Here", ""),
+            ("Kate Bush (12)", ""),
         ],
     )
     def test_new_artist_gets_its_sort_name(self, db, discogs, folder, name, sort_name):
         discogs.add(100, "A", 2000, [(50, name)])
         sync()
         assert db.session.query(models.Artist).one().sort_name == sort_name
+
+    @pytest.mark.parametrize(
+        "name, shown",
+        [
+            ("Prince (2)", "Prince"),
+            ("The Band (3)", "The Band"),
+            ("Kate Bush (12)", "Kate Bush"),
+            ("Blink (182)x", "Blink (182)x"),
+            ("Mr. (Not) Here", "Mr. (Not) Here"),
+            ("Prince(2)", "Prince(2)"),
+        ],
+    )
+    def test_a_new_artist_s_name_drops_discogs_numbers(
+        self, db, discogs, folder, name, shown
+    ):
+        discogs.add(100, "A", 2000, [(50, name)])
+        sync()
+        assert db.session.query(models.Artist).one().name == shown
 
     def test_an_existing_artist_is_not_renamed_by_the_sync(
         self, db, discogs, folder, make
@@ -203,6 +219,7 @@ class TestSortNames:
         sync()
         db.session.expire_all()
         assert (a.name, a.sort_name) == ("Prince (2)", "Prince")
+        assert db.session.query(models.Artist).count() == 2
         assert (b.name, b.sort_name) == ("Moscow Orchestra", "Moscow Symphony")
 
     def test_only_the_leading_the_moves(self, db, discogs, folder):

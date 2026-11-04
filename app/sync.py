@@ -161,18 +161,18 @@ def parse_notes(item):
     }
 
 
-def sort_name_for(name):
-    """The automatic sort name for a new artist, which is what vc shows.
+def clean_name(name):
+    """An artist's name without the number Discogs adds to tell artists of the
+    same name apart ("Prince (2)" is "Prince")."""
+    return re.sub(r" \(\d+\)$", "", name)
 
-    Discogs adds a number to tell artists of the same name apart ("Prince (2)"),
-    which is dropped. "The X" becomes "X, The". It's "" when neither applies.
-    Only a new artist gets one: an existing artist's name and sort name are
-    never rewritten, so what's been set by hand stays.
-    """
-    shown = re.sub(r" \(\d+\)$", "", name)
-    if shown.startswith("The "):
-        return shown.removeprefix("The ") + ", The"
-    return shown if shown != name else ""
+
+def sort_name_for(name):
+    """The automatic sort name for a new artist, from its cleaned name: "The X"
+    becomes "X, The", and it's "" when there's no leading "The"."""
+    if name.startswith("The "):
+        return name.removeprefix("The ") + ", The"
+    return ""
 
 
 def sync_folders(discogs_folders, summary):
@@ -206,14 +206,17 @@ def _artists(release, known, summary):
         if artist is None:
             from app.models import Artist
 
-            artist = Artist(
-                discogs_id=a.id, name=a.name, sort_name=sort_name_for(a.name)
-            )
+            # `name` is what vc prints, so it has the number dropped; the
+            # sort name is only for sorting. Only a new artist gets either:
+            # an existing artist is never rewritten, so what's been set by
+            # hand stays.
+            name = clean_name(a.name)
+            artist = Artist(discogs_id=a.id, name=name, sort_name=sort_name_for(name))
             db.session.add(artist)
             db.session.flush()
             known[a.id] = artist
             summary.artists_added += 1
-            logger.info(f"Adding artist {a.name!r}")
+            logger.info(f"Adding artist {name!r}")
         artists.append(artist)
     return artists
 
