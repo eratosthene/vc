@@ -55,3 +55,8 @@ DISCOGS_SETTINGS = {
     "USER_TOKEN": "",
     "USER_AGENT": "discogs_exporter/1.0",
 }
+
+# Where the Discogs sync keeps its lock and its background jobs' state and log
+# files. The default is a "vc-sync-jobs" folder in the system's temp folder.
+# Every gunicorn worker has to see the same folder.
+# SYNC_JOB_FOLDER = "/tmp/vc-sync-jobs"
