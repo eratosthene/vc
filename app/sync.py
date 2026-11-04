@@ -14,6 +14,7 @@ all of it in a transaction that it rolls back, so nothing is saved.
 import fcntl
 import logging
 import os
+import re
 import tempfile
 from contextlib import contextmanager
 
@@ -161,10 +162,17 @@ def parse_notes(item):
 
 
 def sort_name_for(name):
-    """The automatic sort name for a new artist: "The X" becomes "X, The"."""
-    if name.startswith("The "):
-        return name.removeprefix("The ") + ", The"
-    return ""
+    """The automatic sort name for a new artist, which is what vc shows.
+
+    Discogs adds a number to tell artists of the same name apart ("Prince (2)"),
+    which is dropped. "The X" becomes "X, The". It's "" when neither applies.
+    Only a new artist gets one: an existing artist's name and sort name are
+    never rewritten, so what's been set by hand stays.
+    """
+    shown = re.sub(r" \(\d+\)$", "", name)
+    if shown.startswith("The "):
+        return shown.removeprefix("The ") + ", The"
+    return shown if shown != name else ""
 
 
 def sync_folders(discogs_folders, summary):

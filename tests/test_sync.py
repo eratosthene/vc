@@ -182,12 +182,28 @@ class TestSortNames:
             ("Thelonious Monk", ""),
             ("the Pogues", ""),
             ("Various", ""),
+            ("Prince (2)", "Prince"),
+            ("The Band (3)", "Band, The"),
+            ("Kate Bush (12)", "Kate Bush"),
+            ("Blink (182)x", ""),
+            ("Mr. (Not) Here", ""),
         ],
     )
     def test_new_artist_gets_its_sort_name(self, db, discogs, folder, name, sort_name):
         discogs.add(100, "A", 2000, [(50, name)])
         sync()
         assert db.session.query(models.Artist).one().sort_name == sort_name
+
+    def test_an_existing_artist_is_not_renamed_by_the_sync(
+        self, db, discogs, folder, make
+    ):
+        a = make.artist("Prince (2)", discogs_id=12, sort_name="Prince")
+        b = make.artist("Moscow Orchestra", discogs_id=13, sort_name="Moscow Symphony")
+        discogs.add(100, "A", 2000, [(12, "Prince (3)"), (13, "Московский оркестр")])
+        sync()
+        db.session.expire_all()
+        assert (a.name, a.sort_name) == ("Prince (2)", "Prince")
+        assert (b.name, b.sort_name) == ("Moscow Orchestra", "Moscow Symphony")
 
     def test_only_the_leading_the_moves(self, db, discogs, folder):
         discogs.add(100, "A", 2000, [(50, "The Band of The Hand")])
