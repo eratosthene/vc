@@ -2,7 +2,7 @@ from flask import render_template
 from wtforms import BooleanField
 from flask_appbuilder import ModelView, CompactCRUDMixin
 from flask_appbuilder.models.sqla.interface import SQLAInterface
-from app import appbuilder
+from app import app, appbuilder
 from app.models import CollectionItem, Artist, Genre, Style, Category, Folder
 from app.widgets import CollectionModelListWidget
 from app.printview import PrintView
@@ -149,7 +149,7 @@ appbuilder.add_view(PrintView, "Print View")
 """
 
 
-@appbuilder.app.errorhandler(404)
+@app.errorhandler(404)
 def page_not_found(e):
     return render_template(
         "404.html", base_template=appbuilder.base_template, appbuilder=appbuilder

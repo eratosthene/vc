@@ -11,7 +11,6 @@ SQLALCHEMY_DATABASE_URI = (
     f"mysql+pymysql://vc:{os.environ['VC_DEV_DB_PASSWORD']}@db/vc?charset=utf8mb4"
 )
 SQLALCHEMY_TRACK_MODIFICATIONS = False
-CSRF_ENABLED = True
 APP_NAME = "vc (dev)"
 AUTH_TYPE = AUTH_DB
 BABEL_DEFAULT_LOCALE = "en"

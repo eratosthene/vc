@@ -17,8 +17,8 @@ SECRET_KEY = "change-me"
 SQLALCHEMY_DATABASE_URI = "mysql+pymysql://vc:change-me@localhost/vc?charset=utf8mb4"
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-# Flask-WTF flag for CSRF
-CSRF_ENABLED = True
+# CSRF protection is on by default (Flask-WTF's WTF_CSRF_ENABLED), so there is
+# nothing to set. The old CSRF_ENABLED setting does nothing now.
 
 # ------------------------------
 # GLOBALS FOR APP Builder
