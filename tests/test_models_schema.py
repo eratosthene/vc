@@ -51,3 +51,18 @@ def test_every_model_table_is_utf8mb4(db):
     for table in tables:
         assert table.kwargs.get("mysql_charset") == "utf8mb4", table.name
     assert models.TABLE_ARGS == {"mysql_charset": "utf8mb4"}
+
+
+def test_the_security_tables_have_the_shapes_migration_0002_gives_them(db):
+    # Flask-AppBuilder 5 changed its own tables, and migration 0002 brings an
+    # existing database to the same shapes. SQLite can't run that migration's
+    # ALTERs, so this pins what it aims for; the Migrations workflow checks it
+    # against MariaDB with `flask db check`.
+    tables = db.metadata.tables
+    for table in ("ab_user", "ab_register_user"):
+        assert tables[table].c.username.type.length == 128
+        assert tables[table].c.email.type.length == 320
+        assert tables[table].c.email.unique
+    for column in ("permission_id", "view_menu_id"):
+        assert not tables["ab_permission_view"].c[column].nullable
+    assert "ab_api_key" in tables

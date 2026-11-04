@@ -2,7 +2,8 @@ import logging
 import click
 import sqlalchemy as sa
 from flask import Flask
-from flask_appbuilder import SQLA, AppBuilder
+from flask_appbuilder import AppBuilder, Model
+from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate, stamp, upgrade
 
 """
@@ -14,11 +15,9 @@ logging.getLogger().setLevel(logging.INFO)
 
 app = Flask(__name__)
 app.config.from_object("config")
-# Flask-AppBuilder's SQLA is Flask-SQLAlchemy with Flask-AppBuilder's Model as
-# the models' base class, so its metadata (ours and the ab_* tables) is on db. It
-# also makes Flask-SQLAlchemy 2 work with SQLAlchemy 1.4. Flask-AppBuilder 5 drops
-# it: use Flask-SQLAlchemy's SQLAlchemy(app, model_class=Model) then (#6).
-db = SQLA(app)
+# Flask-AppBuilder's Model is the models' base class, so passing it here puts
+# its metadata (ours and the ab_* tables) on db.
+db = SQLAlchemy(app, model_class=Model)
 migrate = Migrate(app, db)
 # The views import `db`, so they can only be imported once it exists.
 from app.index import MyIndexView  # noqa: E402

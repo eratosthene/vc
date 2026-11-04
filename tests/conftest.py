@@ -36,7 +36,6 @@ def _install_fake_config():
         "connect_args": {"check_same_thread": False},
     }
     config.SQLALCHEMY_TRACK_MODIFICATIONS = False
-    config.CSRF_ENABLED = False
     config.WTF_CSRF_ENABLED = False
     config.APP_NAME = "vc-test"
     config.AUTH_TYPE = AUTH_DB
