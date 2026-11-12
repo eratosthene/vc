@@ -105,3 +105,38 @@ class TestSetupDb:
         assert result.exit_code == 0, result.output
         assert set(MODEL_TABLES) <= tables(db)
         assert version(db) == [(head(),)]
+
+
+class TestMigration0003:
+    def test_it_adds_the_print_subtitle_to_a_database_at_0002(
+        self, app, db, new_database
+    ):
+        from flask_migrate import downgrade, upgrade
+
+        run(app)
+        with app.app_context():
+            # Back to 0002, as a live database is before the deploy, with an
+            # item that must keep what it has.
+            downgrade(directory="migrations", revision="0002")
+            columns = {
+                c["name"] for c in sa.inspect(db.engine).get_columns("collection_item")
+            }
+            assert "print_subtitle" not in columns
+            with db.engine.begin() as conn:
+                conn.execute(
+                    sa.text(
+                        "insert into collection_item (instance_id, release_id, title)"
+                        " values (1, 1, 'Weezer')"
+                    )
+                )
+            upgrade(directory="migrations", revision="0003")
+        columns = {
+            c["name"] for c in sa.inspect(db.engine).get_columns("collection_item")
+        }
+        assert "print_subtitle" in columns
+        with db.engine.connect() as conn:
+            row = conn.execute(
+                sa.text("select title, print_subtitle from collection_item")
+            ).one()
+        assert tuple(row) == ("Weezer", None)
+        assert version(db) == [("0003",)]

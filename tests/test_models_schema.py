@@ -66,3 +66,13 @@ def test_the_security_tables_have_the_shapes_migration_0002_gives_them(db):
     for column in ("permission_id", "view_menu_id"):
         assert not tables["ab_permission_view"].c[column].nullable
     assert "ab_api_key" in tables
+
+
+def test_the_print_subtitle_is_what_migration_0003_adds(db):
+    # An optional short text, which an item has none of until one is typed in.
+    # The Migrations workflow checks the migration against MariaDB with
+    # `flask db check`; tests/test_cli.py runs it on SQLite.
+    column = db.metadata.tables["collection_item"].c.print_subtitle
+    assert column.type.length == 100
+    assert column.nullable
+    assert column.default is None and column.server_default is None
