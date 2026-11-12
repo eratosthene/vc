@@ -50,6 +50,7 @@ class CollectionModelView(ModelView):
         "item_notes",
         "listened",
         "includes",
+        "print_subtitle",
         "folder",
         "filed_under",
     ]
@@ -67,6 +68,7 @@ class CollectionModelView(ModelView):
         "item_notes",
         "listened",
         "includes",
+        "print_subtitle",
         "folder",
         "filed_under",
     ]
@@ -89,9 +91,18 @@ class CollectionModelView(ModelView):
         "item_notes",
         "listened",
         "includes",
+        "print_subtitle",
         "released",
     ]
-    label_columns = {"release_show": "Release Id", "master_show": "Master Id"}
+    label_columns = {
+        "release_show": "Release Id",
+        "master_show": "Master Id",
+        "print_subtitle": "Print Subtitle",
+    }
+    description_columns = {
+        "print_subtitle": "Shown after the title in the Print View, to tell "
+        "releases with the same title apart. The sync never changes it."
+    }
 
 
 class CategoryModelView(ModelView):

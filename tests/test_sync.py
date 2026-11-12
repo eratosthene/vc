@@ -468,6 +468,47 @@ class TestChangesOnDiscogs:
         assert (artist.sort_name, artist.ignore) == ("Fab Four", True)
 
 
+class TestPrintSubtitle:
+    def test_the_sync_never_overwrites_it(self, db, discogs, folder, make):
+        make.item("Weezer", instance_id=100, print_subtitle="Blue Album")
+        discogs.add(100, "Weezer", 1994, [PRINCE])
+        sync()
+        assert items(db).one().print_subtitle == "Blue Album"
+
+    def test_it_survives_an_update_of_everything_else(self, db, discogs, folder, make):
+        make.item("Old title", instance_id=100, print_subtitle="Blue Album")
+        discogs.add(
+            100,
+            "Weezer",
+            1994,
+            [PRINCE],
+            formats=[{"name": "Vinyl", "qty": "1", "descriptions": ["LP"]}],
+        )
+        sync()
+        item = items(db).one()
+        assert item.title == "Weezer"
+        assert item.print_subtitle == "Blue Album"
+
+    def test_it_is_not_among_the_fields_the_sync_reports_changed(
+        self, db, discogs, folder, make
+    ):
+        make.item("Weezer", instance_id=100, year=1994, print_subtitle="Blue Album")
+        discogs.add(100, "Weezer", 1995, [PRINCE])
+        summary = sync()
+        assert all("print_subtitle" not in fields for _, fields in summary.updated)
+
+    def test_a_new_item_has_none(self, db, discogs, folder):
+        discogs.add(100, "Weezer", 1994, [PRINCE])
+        sync()
+        assert items(db).one().print_subtitle is None
+
+    def test_a_dry_run_leaves_it_alone(self, db, discogs, folder, make):
+        make.item("Weezer", instance_id=100, print_subtitle="Blue Album")
+        discogs.add(100, "Weezer", 1994, [PRINCE])
+        sync(dry_run=True)
+        assert items(db).one().print_subtitle == "Blue Album"
+
+
 class TestFolders:
     def test_a_new_folder_is_added_before_its_items(self, db, discogs, folder):
         discogs.add_folder(7, "45s")

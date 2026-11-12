@@ -27,7 +27,7 @@
     {% for i in soundtrack_items %}
           <div class="soundtrack-release-info-block">
             <span class="release-year">{{ i.master_year if i.master_year > 0 else i.year }}</span>
-            <span class="soundtrack-release-title">{{ i }}</span>
+            <span class="soundtrack-release-title">{{ i.print_title }}</span>
       {% for f in i.formats %}
         {% if f.name == 'Box Set' %}
             <span class="formats">({{ f.name }})</span>
@@ -65,7 +65,7 @@
     {% for i in showtunes_items %}
           <div class="soundtrack-release-info-block">
             <span class="release-year">{{ i.master_year if i.master_year > 0 else i.year }}</span>
-            <span class="soundtrack-release-title">{{ i }}</span>
+            <span class="soundtrack-release-title">{{ i.print_title }}</span>
       {% for f in i.formats %}
         {% if f.name == 'Box Set' %}
             <span class="formats">({{ f.name }})</span>
@@ -101,7 +101,7 @@
     {% for i in edison_items %}
           <div class="soundtrack-release-info-block">
             <span class="release-year">{{ i.master_year if i.master_year > 0 else i.year }}</span>
-            <span class="soundtrack-release-title">{{ i }}</span>
+            <span class="soundtrack-release-title">{{ i.print_title }}</span>
       {% if i.master_year != i.year %}
             <span class="formats">[{{ i.year|string+' pressing' if i.year else 'no press date' }}]</span>
       {% endif %}
@@ -127,7 +127,7 @@
           {% for i in items[c.id][a.id] %}
                 <div class="release-info-block">
                   <span class="release-year">{{ i.master_year if i.master_year > 0 else i.year }}</span>
-                  <span class="release-title">{{ i }}</span>
+                  <span class="release-title">{{ i.print_title }}{% if i.id in extra_text[c.id][a.id] %} ({{ extra_text[c.id][a.id][i.id] }}){% endif %}</span>
             {% for f in i.formats %}
               {% if f.name == 'Box Set' %}
                   <span class="formats">({{ f.name }})</span>

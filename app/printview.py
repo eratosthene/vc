@@ -21,6 +21,10 @@ NO_SLOT = 1000
 # Releases in these categories always say which folder they're filed in.
 FOLDER_NOTE_CATEGORIES = ("Christmas", "Halloween", SOUNDTRACKS)
 
+# Format descriptions that say what kind of record it is, not which release,
+# so they're never used to tell releases apart.
+GENERIC_DESCRIPTIONS = ("LP", "Album", '12"')
+
 # The names the template compares with, as template variables.
 LAYOUT_NAMES = {
     "SOUNDTRACKS": SOUNDTRACKS,
@@ -106,6 +110,61 @@ def order_releases(items):
             groups.append(by_master[item.master_id])
     groups.sort(key=lambda g: g[0].master_year or 0)
     return [i for g in groups for i in sorted(g, key=yearRSortFunc)]
+
+
+def format_texts(item):
+    """What Discogs says about an item's formats in its free text field, such
+    as "Blue Vinyl", joined."""
+    return ", ".join(f.text.strip() for f in item.formats if f.text and f.text.strip())
+
+
+def format_descriptions(item):
+    """An item's format descriptions ("Reissue", "180 Gram"), each once, less
+    the generic ones."""
+    seen = []
+    for f in item.formats:
+        for d in f.descriptions or []:
+            if d not in seen and d not in GENERIC_DESCRIPTIONS:
+                seen.append(d)
+    return seen
+
+
+def distinguishing_text(items):
+    """
+    Text to print after the title of the releases in `items` (one artist's
+    items in one category) that have the same title as another, as
+    {item id: text}. Discogs's own words are used, from what the sync stores:
+    the format text, else the format descriptions the releases don't all share.
+    A release gets one only if it tells it apart from the others with that
+    title; one with a print subtitle already has its own and gets none.
+    """
+    by_title = {}
+    for item in items:
+        by_title.setdefault(item.print_title.casefold(), []).append(item)
+    texts = {}
+    for same in by_title.values():
+        if len(same) < 2:
+            continue
+        shared = set.intersection(*(set(format_descriptions(i)) for i in same))
+        candidates = {
+            i.id: [
+                format_texts(i),
+                ", ".join(d for d in format_descriptions(i) if d not in shared),
+            ]
+            for i in same
+        }
+        for i in same:
+            if (i.print_subtitle or "").strip():
+                continue
+            for n, value in enumerate(candidates[i.id]):
+                if value and all(
+                    value.casefold() != candidates[o.id][n].casefold()
+                    for o in same
+                    if o is not i
+                ):
+                    texts[i.id] = value
+                    break
+    return texts
 
 
 class PrintView(BaseView):
@@ -203,6 +262,11 @@ class PrintView(BaseView):
             showtunes_items,
             edison_items,
         ) = self.crunch(**filters)
+        # {category id: {artist id: {item id: text}}}
+        extra_text = {
+            c.id: {a.id: distinguishing_text(items[c.id][a.id]) for a in artists[c.id]}
+            for c in categories
+        }
         return self.render_template(
             self.printview_template,
             appbuilder=self.appbuilder,
@@ -213,6 +277,7 @@ class PrintView(BaseView):
             soundtrack_items=soundtrack_items,
             showtunes_items=showtunes_items,
             edison_items=edison_items,
+            extra_text=extra_text,
             **LAYOUT_NAMES,
         )
 

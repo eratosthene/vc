@@ -29,6 +29,17 @@ all.
 **Manage > Categories** adds, renames and deletes the categories themselves.
 Genres and styles come from Discogs, and the sync adds the ones it finds.
 
+### Print Subtitle
+
+Discogs gives some releases the same title, such as Weezer's three
+self-titled albums, so on the Print View they can't be told apart. **Print
+Subtitle** is an optional short text (up to 100 characters) on an item, in
+Manage > Collection's edit form. The Print View shows it after the title:
+"Weezer (Blue Album)". The sync never changes it.
+
+Without one, the Print View adds text of its own when it has to: see "Same
+title" under the Print View below.
+
 ### Sort names, and Ignore
 
 **Manage > Artists** lists the artists. Each has:
@@ -114,6 +125,16 @@ A release says which folder it's filed in when it isn't in "Alphabetical", and
 always does in the Christmas, Halloween and Soundtracks categories and under
 an artist whose sort name is "Various Artists". It also says "filed under" for
 Filed Under, as above.
+
+**Same title.** When an artist has two or more releases with the same title in
+one category, the page adds text from Discogs after the title of the ones it
+can tell apart: the format's own text (such as "Blue Vinyl"), else the format
+descriptions the releases don't all share (such as "Reissue"). "LP", "Album"
+and 12" are never used, as every record has them. A release that has nothing
+of its own gets nothing, so the rest of a group may look unchanged, and one
+with a Print Subtitle shows that instead (and counts as a different title).
+The order doesn't change. Catalogue numbers aren't stored, so aren't used; set
+a Print Subtitle when Discogs has nothing that helps.
 
 Three categories are laid out their own way, by name, so renaming one gives it
 the normal layout:

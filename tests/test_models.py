@@ -43,6 +43,24 @@ class TestStringForms:
         assert repr(item) == "Abbey Road"
 
     @pytest.mark.parametrize(
+        "subtitle, expected",
+        [
+            (None, "Weezer"),
+            ("", "Weezer"),
+            ("  ", "Weezer"),
+            ("Blue Album", "Weezer (Blue Album)"),
+            (" Blue Album ", "Weezer (Blue Album)"),
+        ],
+    )
+    def test_collection_item_prints_its_subtitle_after_its_title(
+        self, subtitle, expected
+    ):
+        item = models.CollectionItem(title="Weezer", print_subtitle=subtitle)
+        assert item.print_title == expected
+        # The title itself is never changed by it.
+        assert str(item) == "Weezer"
+
+    @pytest.mark.parametrize(
         "fields, expected",
         [
             ({"name": "Vinyl"}, "Vinyl"),

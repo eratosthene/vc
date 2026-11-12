@@ -219,6 +219,9 @@ class CollectionItem(Model):
     item_notes = Column(Text)
     listened = Column(Boolean)
     includes = Column(Text)
+    # Set by hand, never by the sync. The Print View shows it after the title,
+    # to tell apart releases that share one ("Weezer (Blue Album)").
+    print_subtitle = Column(String(100))
 
     artists = relationship("Artist", secondary=assoc_collection_item_artist)
     genres = relationship("Genre", secondary=assoc_collection_item_genre)
@@ -239,6 +242,15 @@ class CollectionItem(Model):
 
     def __repr__(self):
         return str(self)
+
+    @property
+    def print_title(self):
+        """The title as the Print View shows it: with the print subtitle after
+        it, when there is one."""
+        subtitle = (self.print_subtitle or "").strip()
+        if subtitle:
+            return f"{self.title} ({subtitle})"
+        return self.title
 
     def release_show(self):
         return Markup(
