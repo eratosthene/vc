@@ -1,0 +1,33 @@
+{% extends 'appbuilder/general/widgets/list.html' %}
+{% import 'appbuilder/baselib.html' as baselib %}
+
+{# The same table as the stock list, with each row from categorize_row.html so
+   the modal can swap in a fresh one. #}
+{% block begin_loop_values %}
+    {% for item in value_columns %}
+        {% set pk = pks[loop.index-1] %}
+        {% include 'widgets/categorize_row.html' %}
+    {% endfor %}
+{% endblock %}
+
+{% block end_content scoped %}
+    </table>
+    </div>
+
+    <div class="modal fade" id="categorize-modal" tabindex="-1" role="dialog" aria-labelledby="categorize-modal-title">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="{{ _('Close') }}"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="categorize-modal-title">{{ _('Edit Record') }}</h4>
+                </div>
+                <div class="modal-body"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-sm btn-primary" form="categorize-form" id="categorize-save">{{ _('Save') }} <i class="fa fa-save"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='categorize.js') }}" nonce="{{ baselib.get_nonce() }}"></script>
+{% endblock %}

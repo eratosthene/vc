@@ -26,6 +26,11 @@ categories. Give an item as many as you like. The Print View lists an item
 under each of its categories, and an item with none isn't in the Print View at
 all.
 
+The edit button opens the categories in a small window over the list. Save
+changes just that row. The page, sort and place on the page stay as they were.
+If the window can't open, or the save fails in some way other than a mistake in
+the form, the edit button takes you to the usual edit page instead.
+
 **Manage > Categories** adds, renames and deletes the categories themselves.
 Genres and styles come from Discogs, and the sync adds the ones it finds.
 

@@ -1,0 +1,21 @@
+{# The edit form for the Categorize modal. Fields only: the modal has the
+   buttons. #}
+{% import 'appbuilder/general/lib.html' as lib %}
+<form id="categorize-form" action="{{ form_action }}" method="post">
+    {{ form.hidden_tag() }}
+    {% for error in form.errors.get('csrf_token', []) %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endfor %}
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            {% for col in include_cols %}
+                {% set field = form[col] %}
+                {% if field.name not in exclude_cols %}
+                    <tr>
+                        {{ lib.render_field(field, '<td class="col-lg-2">', '</td>', '<td>', '</td>') }}
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </table>
+    </div>
+</form>
