@@ -1104,3 +1104,221 @@ class TestQueries:
         for n in range(2, 25):
             add(n)
         assert count_queries(db, crunch) == few
+
+
+def fmt(text=None, descriptions=("LP", "Album")):
+    return models.CollectionItemFormat(
+        name="Vinyl", qty=1, text=text, descriptions=list(descriptions)
+    )
+
+
+@pytest.fixture
+def weezer(db, make, folder):
+    """Weezer's self-titled albums: in 1994, twice in 2001 and one with no year.
+    Discogs has nothing to tell them apart unless a test gives them formats."""
+    rock = make.category("Rock")
+    artist = make.artist("Weezer", sort_name="Weezer")
+    d = SimpleNamespace(rock=rock, artist=artist, folder=folder)
+    kw = dict(artists=[artist], categories=[rock], folder=folder)
+    d.blue = make.item("Weezer", year=1994, master_id=801, **kw)
+    d.green = make.item("Weezer", year=2001, master_id=802, **kw)
+    d.green2 = make.item("Weezer", year=2001, master_id=803, **kw)
+    d.undated = make.item("Weezer", year=0, master_id=804, **kw)
+    for item in (d.blue, d.green, d.green2, d.undated):
+        item.formats = [fmt()]
+    db.session.commit()
+    return d
+
+
+class TestSameTitles:
+    def test_releases_with_nothing_to_tell_them_apart_are_left_alone(
+        self, admin, weezer
+    ):
+        soup = page(admin, "/printview/all")
+        assert titles(soup, "Rock") == ["Weezer"] * 4
+
+    def test_the_format_text_tells_them_apart(self, admin, db, weezer):
+        weezer.blue.formats = [fmt("Blue Vinyl")]
+        weezer.green.formats = [fmt("Green Vinyl")]
+        db.session.commit()
+        soup = page(admin, "/printview/all")
+        # The one with no year comes first, as it always has. The two with
+        # nothing of their own get no text.
+        assert titles(soup, "Rock") == [
+            "Weezer",
+            "Weezer (Blue Vinyl)",
+            "Weezer (Green Vinyl)",
+            "Weezer",
+        ]
+
+    def test_format_text_is_used_before_descriptions(self, db, weezer):
+        weezer.blue.formats = [fmt("Blue Vinyl", ("LP", "Album", "Reissue"))]
+        weezer.green.formats = [fmt("Green Vinyl", ("LP", "Album"))]
+        got = pv.distinguishing_text([weezer.blue, weezer.green])
+        assert got == {weezer.blue.id: "Blue Vinyl", weezer.green.id: "Green Vinyl"}
+
+    def test_descriptions_the_releases_do_not_all_share_are_used(self, db, weezer):
+        weezer.blue.formats = [fmt(None, ("LP", "Album"))]
+        weezer.green.formats = [fmt(None, ("LP", "Album", "Reissue", "Remastered"))]
+        got = pv.distinguishing_text([weezer.blue, weezer.green])
+        assert got == {weezer.green.id: "Reissue, Remastered"}
+
+    def test_descriptions_that_only_name_the_kind_of_record_are_not_used(
+        self, db, weezer
+    ):
+        weezer.blue.formats = [fmt(None, ("LP", "Album", '12"', "Reissue"))]
+        weezer.green.formats = [fmt(None, ("Album",))]
+        got = pv.distinguishing_text([weezer.blue, weezer.green])
+        assert got == {weezer.blue.id: "Reissue"}
+        weezer.blue.formats = [fmt(None, ("LP",))]
+        weezer.green.formats = [fmt(None, ("Album",))]
+        assert pv.distinguishing_text([weezer.blue, weezer.green]) == {}
+
+    def test_a_text_two_releases_share_tells_neither_apart(self, db, weezer):
+        weezer.blue.formats = [fmt("Blue Vinyl")]
+        weezer.green.formats = [fmt("blue vinyl")]
+        assert pv.distinguishing_text([weezer.blue, weezer.green]) == {}
+
+    def test_an_item_falls_back_to_descriptions_when_its_text_is_shared(
+        self, db, weezer
+    ):
+        weezer.blue.formats = [fmt("Blue Vinyl", ("LP",))]
+        weezer.green.formats = [fmt("Blue Vinyl", ("LP", "Reissue"))]
+        got = pv.distinguishing_text([weezer.blue, weezer.green])
+        assert got == {weezer.green.id: "Reissue"}
+
+    def test_it_shows_on_the_page_in_the_same_order(self, admin, db, weezer):
+        weezer.blue.formats = [fmt("Blue Vinyl")]
+        weezer.green.formats = [fmt("Green Vinyl")]
+        weezer.green2.formats = [fmt(None, ("LP", "Album", "Reissue"))]
+        db.session.commit()
+        soup = page(admin, "/printview/all")
+        assert categories_on(soup)["Rock"][0][1] == [
+            ("0", "Weezer", []),
+            ("1994", "Weezer (Blue Vinyl)", []),
+            ("2001", "Weezer (Green Vinyl)", []),
+            ("2001", "Weezer (Reissue)", []),
+        ]
+
+    def test_the_manual_subtitle_comes_first(self, admin, db, weezer):
+        weezer.blue.formats = [fmt("Blue Vinyl")]
+        weezer.green.formats = [fmt("Green Vinyl")]
+        weezer.blue.print_subtitle = "Blue Album"
+        db.session.commit()
+        soup = page(admin, "/printview/all")
+        assert titles(soup, "Rock")[1:3] == [
+            "Weezer (Blue Album)",
+            "Weezer (Green Vinyl)",
+        ]
+
+    def test_a_subtitle_on_every_release_needs_no_other_text(self, admin, db, weezer):
+        weezer.blue.print_subtitle = "Blue Album"
+        weezer.green.print_subtitle = "Green Album"
+        weezer.green.formats = [fmt("Green Vinyl")]
+        db.session.commit()
+        soup = page(admin, "/printview/all")
+        assert titles(soup, "Rock")[1:3] == [
+            "Weezer (Blue Album)",
+            "Weezer (Green Album)",
+        ]
+
+    def test_a_subtitle_takes_a_release_out_of_a_clash(self, admin, db, weezer):
+        # Only the two with the same title still clash.
+        weezer.green.formats = [fmt("Green Vinyl")]
+        weezer.blue.print_subtitle = "Blue Album"
+        weezer.green2.print_subtitle = "Maladroit"
+        weezer.undated.print_subtitle = "Pinkerton"
+        db.session.commit()
+        got = titles(page(admin, "/printview/all"), "Rock")
+        assert got == [
+            "Weezer (Pinkerton)",
+            "Weezer (Blue Album)",
+            "Weezer",
+            "Weezer (Maladroit)",
+        ]
+
+    def test_a_blank_subtitle_counts_as_none(self, admin, db, weezer):
+        weezer.blue.print_subtitle = "  "
+        db.session.commit()
+        assert titles(page(admin, "/printview/all"), "Rock") == ["Weezer"] * 4
+
+    def test_the_same_title_under_another_artist_is_not_a_clash(
+        self, admin, db, make, folder
+    ):
+        rock = make.category("Rock")
+        for name in ("A", "B"):
+            item = make.item(
+                "Greatest Hits", artists=[make.artist(name)], categories=[rock]
+            )
+            item.formats = [fmt(f"Pressing {name}")]
+        db.session.commit()
+        got = titles(page(admin, "/printview/all"), "Rock")
+        assert got == ["Greatest Hits"] * 2
+
+    def test_the_same_title_in_another_category_is_not_a_clash(
+        self, admin, db, make, folder
+    ):
+        rock, jazz = make.category("Rock"), make.category("Jazz")
+        a = make.artist("A")
+        for n, c in enumerate((rock, jazz)):
+            item = make.item("Hits", artists=[a], categories=[c], folder=folder)
+            item.formats = [fmt(f"Pressing {n}")]
+        db.session.commit()
+        soup = page(admin, "/printview/all")
+        assert titles(soup, "Rock") == ["Hits"]
+        assert titles(soup, "Jazz") == ["Hits"]
+
+    def test_a_clash_inside_one_category_shows_in_every_version_of_the_page(
+        self, admin, db, weezer
+    ):
+        weezer.blue.formats = [fmt("Blue Vinyl")]
+        weezer.green.formats = [fmt("Green Vinyl")]
+        db.session.commit()
+        for url in (
+            "/printview/all",
+            f"/printview/folder/{weezer.folder.id}",
+            f"/printview/category/{weezer.rock.id}",
+        ):
+            got = titles(page(admin, url), "Rock")
+            assert got[1:3] == ["Weezer (Blue Vinyl)", "Weezer (Green Vinyl)"], url
+
+    def test_formats_with_no_descriptions_are_fine(self, db, weezer):
+        weezer.blue.formats = [models.CollectionItemFormat(name="Vinyl")]
+        weezer.green.formats = [fmt("Green Vinyl")]
+        got = pv.distinguishing_text([weezer.blue, weezer.green])
+        assert got == {weezer.green.id: "Green Vinyl"}
+
+    def test_the_subtitle_is_shown_in_the_special_sections_too(
+        self, admin, db, make, folder
+    ):
+        sound = make.category("Soundtracks")
+        item = make.item(
+            "Original Cast",
+            artists=[make.artist()],
+            categories=[sound],
+            folder=folder,
+            print_subtitle="1996",
+        )
+        soup = page(admin, "/printview/all")
+        assert [g[1] for g in special_items(soup)] == ["Original Cast (1996)"]
+        assert item.print_title == "Original Cast (1996)"
+
+    def test_a_clash_adds_no_queries(self, db, make, folder):
+        rock = make.category("Rock")
+        a = make.artist("A")
+        for n in range(6):
+            item = make.item("Same", artists=[a], categories=[rock], folder=folder)
+            item.formats = [fmt(f"Pressing {n}")]
+        db.session.commit()
+
+        def build():
+            categories, artists, items, *_ = crunch()
+            return {
+                c.id: {
+                    x.id: pv.distinguishing_text(items[c.id][x.id])
+                    for x in artists[c.id]
+                }
+                for c in categories
+            }
+
+        assert count_queries(db, build) == count_queries(db, crunch)
