@@ -238,6 +238,45 @@ class TestEditing:
         assert data.item.title == "Abbey Road"
         assert data.item.filed_under == data.artist
 
+    def test_the_collection_view_has_the_print_subtitle(self, admin, data):
+        soup = get(admin, f"/collectionmodelview/edit/{data.item.id}")
+        field = soup.find("input", {"name": "print_subtitle"})
+        assert field is not None
+        assert "Print Subtitle" in body(soup)
+
+    def test_the_collection_view_saves_the_print_subtitle(self, admin, db, data):
+        r = admin.post(
+            f"/collectionmodelview/edit/{data.item.id}",
+            data={
+                "artists": [data.artist.id],
+                "title": "Abbey Road",
+                "year": "1969",
+                "master_id": "5",
+                "master_year": "1969",
+                "categories": [data.category.id],
+                "genres": [data.genre.id],
+                "styles": [data.style.id],
+                "folder": data.folder.id,
+                "filed_under": data.artist.id,
+                "print_subtitle": "Remaster",
+            },
+        )
+        assert r.status_code == 302
+        db.session.expire_all()
+        assert data.item.print_subtitle == "Remaster"
+
+    def test_the_categorize_view_does_not_touch_the_print_subtitle(
+        self, admin, db, data
+    ):
+        data.item.print_subtitle = "Remaster"
+        db.session.commit()
+        admin.post(
+            f"/collectionitemmodelview/edit/{data.item.id}",
+            data={"categories": [data.category.id]},
+        )
+        db.session.expire_all()
+        assert data.item.print_subtitle == "Remaster"
+
     def test_the_collection_view_saves_filed_under(self, admin, db, data, make):
         other = make.artist("Other")
         r = admin.post(
