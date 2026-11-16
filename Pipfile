@@ -18,8 +18,6 @@ pytest-mock = "*"
 # The tests parse HTML with these.
 beautifulsoup4 = "~=4.12"
 lxml = "*"
-# Only for scripts/migrate_from_mongo.py, which runs once.
-pymongo = "*"
 
 [requires]
 python_version = "3.12"

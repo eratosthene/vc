@@ -37,9 +37,8 @@ user-facing guide; this file is what they don't say.
   workers don't share memory.
 - `migrations/`: Alembic, through Flask-Migrate. `flask setup-db` builds a new
   database from the models and stamps it, or migrates an existing one.
-- `scripts/migrate_from_mongo.py`: the one-off move from MongoDB, kept until
-  its packages go. `dev-scripts/`: local helpers. `docker/`: the image, the
-  live and dev compose files and the live server's scripts.
+- `dev-scripts/`: local helpers. `docker/`: the image, the live and dev compose
+  files and the live server's scripts.
 
 ## Things that aren't obvious
 
